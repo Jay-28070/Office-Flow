@@ -1,10 +1,20 @@
 /**
  * officeFlow Authentication Script
- * Handles login and registration forms with validation
- * Prepared for future Firebase integration
+ * Handles login and registration with Firebase Authentication
  */
 
+import { 
+    auth, 
+    signInWithEmailAndPassword, 
+    createUserWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged,
+    sendPasswordResetEmail,
+    updateProfile
+} from './firebase-config.js';
 
+// API Base URL
+const API_BASE_URL = 'http://localhost:3000';
 
 // ===== PASSWORD TOGGLE FUNCTIONALITY =====
 
@@ -95,38 +105,69 @@ function initFormListeners() {
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
 
             try {
-                const response = await fetch('http://localhost:3000/login-form-api', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                // Sign in with Firebase Authentication
+                console.log('Attempting Firebase sign in...');
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const firebaseUser = userCredential.user;
+                console.log('Firebase sign in successful:', firebaseUser.uid);
+
+                // Get Firebase ID token
+                const idToken = await firebaseUser.getIdToken();
+                console.log('Got Firebase ID token');
+
+                // Fetch user data from backend
+                console.log('Fetching user data from backend...');
+                const response = await fetch(`${API_BASE_URL}/api/auth/user-data`, {
+                    method: 'GET',
+                    headers: { 
+                        'Authorization': `Bearer ${idToken}`,
+                        'Content-Type': 'application/json'
+                    }
                 });
 
+                console.log('Backend response status:', response.status);
                 const data = await response.json();
+                console.log('Backend response data:', data);
 
                 if (!response.ok || !data.success) {
-                    alert(data.message || 'Login failed. Please try again.');
+                    console.error('Backend error:', data.message);
+                    alert(data.message || 'Failed to fetch user data.');
+                    await signOut(auth);
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalBtnText;
                     return;
                 }
 
-                // Store token in localStorage
-                localStorage.setItem('authToken', data.token);
+                // Store token and user data
+                localStorage.setItem('authToken', idToken);
                 localStorage.setItem('user', JSON.stringify(data.user));
 
-                alert(data.message);
+                alert('Login successful!');
                 
                 // Redirect based on user role
-                if (data.user && data.user.role === 'superadmin') {
+                if (data.user.role === 'superadmin') {
                     window.location.href = '../../admin/pages/super_admin_dashboard.html';
-                } else if (data.user && data.user.role === 'admin') {
+                } else if (data.user.role === 'admin') {
                     window.location.href = '../../admin/pages/dashboard_admin.html';
                 } else {
                     window.location.href = 'dashboard.html';
                 }
             } catch (err) {
-                console.error('Login error:', err);
-                alert('An error occurred. Please check your connection and try again.');
+                console.error('Login error details:', err);
+                console.error('Error code:', err.code);
+                console.error('Error message:', err.message);
+                let errorMessage = 'An error occurred. Please try again.';
+                
+                // Handle Firebase auth errors
+                if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+                    errorMessage = 'Invalid email or password.';
+                } else if (err.code === 'auth/too-many-requests') {
+                    errorMessage = 'Too many failed attempts. Please try again later.';
+                } else if (err.code === 'auth/network-request-failed') {
+                    errorMessage = 'Network error. Please check your connection.';
+                }
+                
+                alert(errorMessage);
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnText;
             }
@@ -215,11 +256,23 @@ function initFormListeners() {
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Registering...';
 
             try {
+                // Create user in Firebase Authentication
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const firebaseUser = userCredential.user;
+
+                // Update Firebase profile with display name
+                await updateProfile(firebaseUser, {
+                    displayName: fullName
+                });
+
+                // Get Firebase ID token
+                const idToken = await firebaseUser.getIdToken();
+
+                // Register user data in backend
                 const requestBody = {
                     fullName,
                     email,
-                    password,
-                    confirmPassword,
+                    firebaseUid: firebaseUser.uid,
                     isCreatingCompany: companyOption === 'create'
                 };
 
@@ -229,15 +282,20 @@ function initFormListeners() {
                     requestBody.companyName = companyName;
                 }
 
-                const response = await fetch('http://localhost:3000/register-form-api', {
+                const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 
+                        'Authorization': `Bearer ${idToken}`,
+                        'Content-Type': 'application/json'
+                    },
                     body: JSON.stringify(requestBody)
                 });
 
                 const data = await response.json();
 
                 if (!response.ok || !data.success) {
+                    // If backend registration fails, delete the Firebase user
+                    await firebaseUser.delete();
                     alert(data.message || 'Registration failed. Please try again.');
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalBtnText;
@@ -246,11 +304,23 @@ function initFormListeners() {
 
                 alert(data.message);
                 
-                // Redirect to login page after successful registration
+                // Sign out and redirect to login
+                await signOut(auth);
                 window.location.href = 'login.html';
             } catch (err) {
                 console.error('Registration error:', err);
-                alert('An error occurred. Please check your connection and try again.');
+                let errorMessage = 'An error occurred. Please try again.';
+                
+                // Handle Firebase auth errors
+                if (err.code === 'auth/email-already-in-use') {
+                    errorMessage = 'Email is already registered.';
+                } else if (err.code === 'auth/weak-password') {
+                    errorMessage = 'Password is too weak. Please use a stronger password.';
+                } else if (err.code === 'auth/network-request-failed') {
+                    errorMessage = 'Network error. Please check your connection.';
+                }
+                
+                alert(errorMessage);
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnText;
             }
@@ -259,52 +329,66 @@ function initFormListeners() {
 }
 
 
-// ===== FIREBASE INTEGRATION PREPARATION =====
+// ===== AUTH STATE MANAGEMENT =====
 
 /**
- * TODO: Firebase Authentication Integration
- * 
- * When Firebase is set up, replace the simulation functions with:
- * 
- * 1. Import Firebase Auth:
- *    import { auth } from './firebase-config.js';
- *    import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
- * 
- * 2. Replace simulateLogin with:
- *    async function loginUser(email, password) {
- *        try {
- *            const userCredential = await signInWithEmailAndPassword(auth, email, password);
- *            const user = userCredential.user;
- *            // Handle successful login
- *            return user;
- *        } catch (error) {
- *            // Handle login errors
- *            throw error;
- *        }
- *    }
- * 
- * 3. Replace simulateRegister with:
- *    async function registerUser(email, password, fullName) {
- *        try {
- *            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
- *            const user = userCredential.user;
- *            // Update user profile with full name
- *            await updateProfile(user, { displayName: fullName });
- *            return user;
- *        } catch (error) {
- *            // Handle registration errors
- *            throw error;
- *        }
- *    }
- * 
- * 4. Add proper error handling for Firebase auth errors
- * 5. Implement user role management (admin vs regular user)
- * 6. Add email verification flow
- * 7. Implement password reset functionality
+ * Monitor Firebase authentication state
  */
+export function initAuthStateListener() {
+    onAuthStateChanged(auth, async (user) => {
+        if (user) {
+            // User is signed in, refresh token
+            const idToken = await user.getIdToken(true);
+            localStorage.setItem('authToken', idToken);
+        } else {
+            // User is signed out
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+        }
+    });
+}
+
+/**
+ * Sign out user
+ */
+export async function logoutUser() {
+    try {
+        await signOut(auth);
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        window.location.href = 'login.html';
+    } catch (error) {
+        console.error('Logout error:', error);
+        alert('Failed to logout. Please try again.');
+    }
+}
+
+/**
+ * Send password reset email
+ */
+export async function resetPassword(email) {
+    try {
+        await sendPasswordResetEmail(auth, email);
+        alert('Password reset email sent! Check your inbox.');
+    } catch (error) {
+        console.error('Password reset error:', error);
+        let errorMessage = 'Failed to send password reset email.';
+        
+        if (error.code === 'auth/user-not-found') {
+            errorMessage = 'No account found with this email.';
+        } else if (error.code === 'auth/invalid-email') {
+            errorMessage = 'Invalid email address.';
+        }
+        
+        alert(errorMessage);
+    }
+}
+
+// ===== FIREBASE INTEGRATION COMPLETE =====
 
 // Initialize UI behavior on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     initPasswordToggle();
     initFormListeners();
+    initAuthStateListener();
 });

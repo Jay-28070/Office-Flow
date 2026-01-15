@@ -5,7 +5,7 @@
       "name": "TechCorp",
       "companyCode": "TECH4668",
       "settings": {
-        "annualLeaveBalance": 20,
+        "annualLeaveBalance": 15,
         "sickLeaveBalance": 10,
         "departments": [
           "IT",

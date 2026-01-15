@@ -1,52 +1,12 @@
 'use strict';
 
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-
-// Secret key for JWT (in production, use environment variable)
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+const { admin } = require('../config/firebase');
 
 /**
- * Hash password using bcrypt
+ * Middleware to verify Firebase token only (without checking Firestore)
+ * Used for registration where user doesn't exist in Firestore yet
  */
-async function hashPassword(password) {
-    const salt = await bcrypt.genSalt(10);
-    return await bcrypt.hash(password, salt);
-}
-
-/**
- * Compare password with hashed password
- */
-async function comparePassword(password, hashedPassword) {
-    return await bcrypt.compare(password, hashedPassword);
-}
-
-/**
- * Generate JWT token
- */
-function generateToken(userId, companyId, role) {
-    return jwt.sign(
-        { userId, companyId, role },
-        JWT_SECRET,
-        { expiresIn: '7d' }
-    );
-}
-
-/**
- * Verify JWT token
- */
-function verifyToken(token) {
-    try {
-        return jwt.verify(token, JWT_SECRET);
-    } catch (error) {
-        return null;
-    }
-}
-
-/**
- * Middleware to authenticate requests
- */
-function authenticateToken(req, res, next) {
+async function verifyFirebaseToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -57,16 +17,66 @@ function authenticateToken(req, res, next) {
         });
     }
 
-    const decoded = verifyToken(token);
-    if (!decoded) {
+    try {
+        // Verify Firebase ID token
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        req.firebaseUser = decodedToken;
+        next();
+    } catch (error) {
+        console.error('Token verification error:', error);
         return res.status(403).json({ 
             message: 'Invalid or expired token', 
             success: false 
         });
     }
+}
 
-    req.user = decoded;
-    next();
+/**
+ * Middleware to authenticate Firebase tokens
+ */
+async function authenticateFirebaseToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).json({ 
+            message: 'Access token required', 
+            success: false 
+        });
+    }
+
+    try {
+        // Verify Firebase ID token
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        req.firebaseUser = decodedToken;
+        
+        // Fetch user data from Firestore
+        const userDoc = await admin.firestore()
+            .collection('users')
+            .doc(decodedToken.uid)
+            .get();
+        
+        if (!userDoc.exists) {
+            return res.status(403).json({ 
+                message: 'User not found in database', 
+                success: false 
+            });
+        }
+
+        req.user = {
+            userId: decodedToken.uid,
+            email: decodedToken.email,
+            ...userDoc.data()
+        };
+        
+        next();
+    } catch (error) {
+        console.error('Token verification error:', error);
+        return res.status(403).json({ 
+            message: 'Invalid or expired token', 
+            success: false 
+        });
+    }
 }
 
 /**
@@ -96,11 +106,8 @@ function requireAdmin(req, res, next) {
 }
 
 module.exports = {
-    hashPassword,
-    comparePassword,
-    generateToken,
-    verifyToken,
-    authenticateToken,
+    verifyFirebaseToken,
+    authenticateFirebaseToken,
     requireSuperAdmin,
     requireAdmin
 };

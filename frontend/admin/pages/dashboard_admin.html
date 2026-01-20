@@ -1,15 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Dashboard - officeFlow</title>
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
     <link rel="stylesheet" href="../../users/styles/base.css">
     <link rel="stylesheet" href="../styles/dashboard_admin.css">
+    <link rel="stylesheet" href="../../users/styles/loading.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Load color scheme before page renders -->
+    <script src="../../users/scripts/colorScheme.js"></script>
 </head>
+
 <body class="admin-dashboard-body">
+    <!-- Loading Screen -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-logo">
+            <i class="fas fa-crown"></i>
+        </div>
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading admin dashboard...</div>
+    </div>
+
     <!-- Top Navigation Bar -->
     <nav class="top-nav">
         <div class="nav-brand clickable-logo" id="navBrand" title="Click to open menu">
@@ -21,7 +36,7 @@
                 <i class="fas fa-chevron-down"></i>
             </div>
         </div>
-        
+
         <div class="nav-user">
             <div class="admin-badge" id="adminBadge">
                 <i class="fas fa-shield-alt"></i>
@@ -122,18 +137,31 @@
                 </div>
 
                 <!-- Department Info Card -->
-                <div class="department-info-card" id="departmentInfoCard">
-                    <div class="department-header">
-                        <div class="department-icon">
-                            <i class="fas fa-building"></i>
+                <!-- Department Info Card -->
+                <div class="department-info-card" id="departmentInfoCard"
+                    style="background: linear-gradient(135deg, #ffffff 0%, #f9fafb 100%) !important; border: 2px solid #e5e7eb !important; display: block !important; min-height: 120px !important; padding: 2rem !important; border-radius: 16px !important; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important; position: relative !important; overflow: hidden !important;">
+                    <!-- Decorative element -->
+                    <div
+                        style="position: absolute; top: -20px; right: -20px; width: 150px; height: 150px; background: linear-gradient(135deg, #fb923c, #fbbf24); opacity: 0.1; border-radius: 50%; z-index: 0;">
+                    </div>
+
+                    <div class="department-header"
+                        style="position: relative; z-index: 1; display: flex !important; align-items: center !important; gap: 1.5rem !important;">
+                        <div class="department-icon"
+                            style="background: linear-gradient(135deg, #fb923c, #f87171) !important; color: white !important; width: 64px !important; height: 64px !important; display: flex !important; align-items: center !important; justify-content: center !important; border-radius: 16px !important; box-shadow: 0 4px 12px rgba(251, 146, 60, 0.3) !important;">
+                            <i class="fas fa-building"
+                                style="color: #ffffff !important; font-size: 1.75rem !important;"></i>
                         </div>
-                        <div class="department-details">
-                            <h3 class="department-name" id="departmentName">Loading...</h3>
-                            <p class="department-description" id="departmentDescription">Loading department information...</p>
+                        <div class="department-details" style="flex: 1 !important;">
+                            <h3 class="department-name" id="departmentName"
+                                style="color: #1f2937 !important; font-size: 1.75rem !important; font-weight: 700 !important; margin: 0 0 0.5rem 0 !important; line-height: 1.2 !important;">
+                                Loading...</h3>
+                            <p class="department-description" id="departmentDescription"
+                                style="color: #6b7280 !important; margin: 0 !important; font-size: 1rem !important; line-height: 1.5 !important;">
+                                Loading department information...</p>
                         </div>
                     </div>
                 </div>
-
                 <!-- Admin Stats Cards -->
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -187,7 +215,8 @@
             <section id="department-requests" class="content-section">
                 <div class="section-header">
                     <h1 class="section-title">Department Requests</h1>
-                    <p class="section-subtitle" id="departmentRequestsSubtitle">View and manage requests for your department.</p>
+                    <p class="section-subtitle" id="departmentRequestsSubtitle">View and manage requests for your
+                        department.</p>
                 </div>
 
                 <!-- Request Filters -->
@@ -281,13 +310,8 @@
                                 <i class="fas fa-sticky-note"></i>
                                 Assignment Notes (Optional)
                             </label>
-                            <textarea 
-                                id="assignmentNotes" 
-                                name="notes" 
-                                class="form-textarea" 
-                                placeholder="Add any special instructions or notes..."
-                                rows="3"
-                            ></textarea>
+                            <textarea id="assignmentNotes" name="notes" class="form-textarea"
+                                placeholder="Add any special instructions or notes..." rows="3"></textarea>
                         </div>
 
                         <div class="form-actions">
@@ -344,14 +368,8 @@
                                     <i class="fas fa-envelope"></i>
                                     Admin Email
                                 </label>
-                                <input 
-                                    type="email" 
-                                    id="adminEmail" 
-                                    name="email" 
-                                    class="form-input" 
-                                    placeholder="Enter admin email address"
-                                    required
-                                >
+                                <input type="email" id="adminEmail" name="email" class="form-input"
+                                    placeholder="Enter admin email address" required>
                             </div>
                             <div class="form-group">
                                 <label for="adminDepartment" class="form-label">
@@ -374,14 +392,8 @@
                                 <i class="fas fa-briefcase"></i>
                                 Job Title
                             </label>
-                            <input 
-                                type="text" 
-                                id="adminJobTitle" 
-                                name="jobTitle" 
-                                class="form-input" 
-                                placeholder="e.g., IT Department Head, Maintenance Supervisor"
-                                required
-                            >
+                            <input type="text" id="adminJobTitle" name="jobTitle" class="form-input"
+                                placeholder="e.g., IT Department Head, Maintenance Supervisor" required>
                         </div>
 
                         <div class="form-actions">
@@ -437,7 +449,7 @@
                             <!-- Analytics data will be populated by JavaScript -->
                         </div>
                     </div>
-                    
+
                     <div class="analytics-card">
                         <h3 class="analytics-title">
                             <i class="fas fa-users"></i>
@@ -486,7 +498,7 @@
                                 <i class="fas fa-user"></i>
                                 Personal Information
                             </h3>
-                            
+
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="firstName" class="form-label">First Name</label>
@@ -502,7 +514,8 @@
                                 <div class="form-group">
                                     <label for="email" class="form-label">Email Address</label>
                                     <input type="email" id="email" name="email" class="form-input" required readonly>
-                                    <small class="form-help">Email cannot be changed. Contact Super Admin if needed.</small>
+                                    <small class="form-help">Email cannot be changed. Contact Super Admin if
+                                        needed.</small>
                                 </div>
                                 <div class="form-group">
                                     <label for="phoneNumber" class="form-label">Phone Number</label>
@@ -516,7 +529,7 @@
                                 <i class="fas fa-building"></i>
                                 Administrative Information
                             </h3>
-                            
+
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="jobTitle" class="form-label">Job Title</label>
@@ -696,7 +709,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    
+
     <script src="../scripts/dashboard_admin.js"></script>
 </body>
+
 </html>

@@ -1,15 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - officeFlow</title>
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
     <link rel="stylesheet" href="../styles/base.css">
     <link rel="stylesheet" href="../styles/dashboard.css">
+    <link rel="stylesheet" href="../styles/loading.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Load color scheme before page renders -->
+    <script src="../scripts/colorScheme.js"></script>
 </head>
+
 <body class="dashboard-body">
+    <!-- Loading Screen -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-logo">
+            <i class="fas fa-building"></i>
+        </div>
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Loading dashboard...</div>
+    </div>
+
     <!-- Top Navigation Bar -->
     <nav class="top-nav">
         <div class="nav-brand clickable-logo" id="navBrand" title="Click to open menu">
@@ -22,7 +37,7 @@
             </div>
             <div class="logo-tooltip">Tap to open menu</div>
         </div>
-        
+
         <div class="nav-user">
             <button class="settings-btn" id="settingsBtn" title="Settings">
                 <i class="fas fa-cog"></i>
@@ -175,14 +190,8 @@
                                     <i class="fas fa-heading"></i>
                                     Request Title
                                 </label>
-                                <input 
-                                    type="text" 
-                                    id="requestTitle" 
-                                    name="title" 
-                                    class="form-input" 
-                                    placeholder="Brief description of your request"
-                                    required
-                                >
+                                <input type="text" id="requestTitle" name="title" class="form-input"
+                                    placeholder="Brief description of your request" required>
                             </div>
                             <div class="form-group">
                                 <label for="requestCategory" class="form-label">
@@ -217,18 +226,14 @@
                                 <i class="fas fa-align-left"></i>
                                 Description
                             </label>
-                            <textarea 
-                                id="requestDescription" 
-                                name="description" 
-                                class="form-textarea" 
-                                placeholder="Provide detailed information about your request..."
-                                rows="5"
-                                required
-                            ></textarea>
+                            <textarea id="requestDescription" name="description" class="form-textarea"
+                                placeholder="Provide detailed information about your request..." rows="5"
+                                required></textarea>
                         </div>
 
                         <!-- Leave-specific fields (hidden unless HR/Leave selected) -->
-                        <div class="form-group" id="leaveFields" style="display:none; border:1px dashed var(--gray-200); padding:0.75rem; border-radius:8px;">
+                        <div class="form-group" id="leaveFields"
+                            style="display:none; border:1px dashed var(--gray-200); padding:0.75rem; border-radius:8px;">
                             <label class="form-label">
                                 <i class="fas fa-umbrella-beach"></i>
                                 Leave Request Details
@@ -245,13 +250,16 @@
                             </div>
                             <div style="display:flex;gap:0.5rem;align-items:center;margin-top:0.5rem;">
                                 <button type="button" class="btn-small" id="calcLeaveBtn">Calculate Days</button>
-                                <div id="leaveDaysSummary" style="font-size:0.9rem;color:var(--gray-700);">Days: <span id="leaveDays">0</span></div>
+                                <div id="leaveDaysSummary" style="font-size:0.9rem;color:var(--gray-700);">Days: <span
+                                        id="leaveDays">0</span></div>
                                 <label style="margin-left:auto;display:flex;align-items:center;gap:0.4rem;">
                                     <input type="checkbox" id="deductFromBalance" checked>
                                     Deduct from balance
                                 </label>
                             </div>
-                            <div id="leaveBalanceHint" style="margin-top:0.5rem;font-size:0.85rem;color:var(--gray-600);">Available: <span id="availableLeave">--</span></div>
+                            <div id="leaveBalanceHint"
+                                style="margin-top:0.5rem;font-size:0.85rem;color:var(--gray-600);">Available: <span
+                                    id="availableLeave">--</span></div>
                         </div>
 
                         <div class="form-actions">
@@ -498,32 +506,45 @@
                                 <i class="fas fa-user"></i>
                                 Personal Information
                             </h3>
-                            
+
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="firstName" class="form-label">First Name</label>
-                                    <input type="text" id="firstName" name="firstName" class="form-input" value="John" required>
+                                    <input type="text" id="firstName" name="firstName" class="form-input" value="John"
+                                        required>
                                 </div>
                                 <div class="form-group">
                                     <label for="lastName" class="form-label">Last Name</label>
-                                    <input type="text" id="lastName" name="lastName" class="form-input" value="Doe" required>
+                                    <input type="text" id="lastName" name="lastName" class="form-input" value="Doe"
+                                        required>
                                 </div>
                             </div>
 
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="email" class="form-label">Email Address</label>
-                                    <input type="email" id="email" name="email" class="form-input" value="john.doe@company.com" required>
+                                    <input type="email" id="email" name="email" class="form-input"
+                                        value="john.doe@company.com" required>
                                 </div>
                                 <div class="form-group">
                                     <label for="phoneNumber" class="form-label">Phone Number</label>
-                                    <input type="tel" id="phoneNumber" name="phoneNumber" class="form-input" value="+1 (555) 123-4567">
+                                    <input type="tel" id="phoneNumber" name="phoneNumber" class="form-input"
+                                        value="+1 (555) 123-4567">
                                 </div>
                             </div>
 
-                            <div class="form-group">
-                                <label for="jobTitle" class="form-label">Job Title <span class="optional">(Optional)</span></label>
-                                <input type="text" id="jobTitle" name="jobTitle" class="form-input" value="Software Engineer" placeholder="Enter your job title">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="department" class="form-label">Department</label>
+                                    <select id="department" name="department" class="form-select">
+                                        <option value="">Select Department</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="jobTitle" class="form-label">Job Title</label>
+                                    <input type="text" id="jobTitle" name="jobTitle" class="form-input"
+                                        value="Software Engineer" placeholder="Enter your job title">
+                                </div>
                             </div>
                         </div>
 
@@ -532,7 +553,7 @@
                                 <i class="fas fa-cog"></i>
                                 Preferences
                             </h3>
-                            
+
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="defaultCategory" class="form-label">Default Request Category</label>
@@ -571,7 +592,7 @@
                                 <i class="fas fa-universal-access"></i>
                                 Accessibility Options
                             </h3>
-                            
+
                             <div class="form-row">
                                 <div class="form-group">
                                     <label for="fontSize" class="form-label">Font Size</label>
@@ -597,7 +618,7 @@
                                 <i class="fas fa-shield-alt"></i>
                                 Security
                             </h3>
-                            
+
                             <div class="security-actions">
                                 <button type="button" class="btn-secondary" id="changePasswordBtn" disabled>
                                     <i class="fas fa-key"></i>
@@ -737,6 +758,22 @@
                         <button class="btn-primary" id="goToProfile">
                             <i class="fas fa-user-edit"></i>
                             Go to Profile Settings
+                        </button>
+                    </div>
+
+                    <!-- Request Admin Access (only show for regular users) -->
+                    <div class="settings-section" id="adminRequestSection" style="display: none;">
+                        <h3 class="settings-section-title">
+                            <i class="fas fa-user-shield"></i>
+                            Request Admin Access
+                        </h3>
+                        <p class="settings-description">
+                            Want to help manage department requests and approve leave applications? Request admin access
+                            and a Super Admin will review your request.
+                        </p>
+                        <button class="btn-primary" id="requestAdminBtn">
+                            <i class="fas fa-paper-plane"></i>
+                            Request Admin Access
                         </button>
                     </div>
                 </div>
@@ -887,6 +924,96 @@
         </div>
     </div>
 
+    <!-- Welcome Modal for New Users -->
+    <div class="modal-overlay" id="welcomeModal" style="display: none;">
+        <div class="modal welcome-modal">
+            <div class="modal-header">
+                <h3 class="modal-title">
+                    <i class="fas fa-star"></i>
+                    Welcome to officeFlow!
+                </h3>
+            </div>
+            <div class="modal-content">
+                <div class="welcome-content">
+                    <p class="welcome-message">
+                        <i class="fas fa-check-circle" style="color: var(--success-color);"></i>
+                        Your account has been created successfully!
+                    </p>
+                    <p class="welcome-description">
+                        Complete your profile to get the most out of officeFlow. Add your job details,
+                        choose your preferred theme, and customize your experience.
+                    </p>
+                    <div class="welcome-features">
+                        <div class="feature-item">
+                            <i class="fas fa-user-circle"></i>
+                            <span>Update your profile information</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-palette"></i>
+                            <span>Choose your color scheme</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-briefcase"></i>
+                            <span>Set your job title and department</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="welcomeLater">Maybe Later</button>
+                <button class="btn-primary" id="welcomeCustomize">
+                    <i class="fas fa-arrow-right"></i>
+                    Take Me There
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Customization Popup -->
+    <div class="profile-popup-overlay" id="profilePopupOverlay">
+        <div class="profile-popup">
+            <div class="profile-popup-header">
+                <i class="fas fa-user-edit"></i>
+                <h2>Complete Your Profile</h2>
+                <p>Help us personalize your experience by adding your department and job title</p>
+            </div>
+            <div class="profile-popup-body">
+                <div class="form-group">
+                    <label for="popupDepartment" class="form-label">
+                        <i class="fas fa-building"></i>
+                        Department
+                    </label>
+                    <select id="popupDepartment" class="form-input">
+                        <option value="">Select your department</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="popupJobTitle" class="form-label">
+                        <i class="fas fa-id-badge"></i>
+                        Job Title
+                    </label>
+                    <input type="text" id="popupJobTitle" class="form-input" placeholder="e.g., Software Developer">
+                </div>
+            </div>
+            <div class="profile-popup-actions">
+                <button class="btn-secondary" id="popupLaterBtn">
+                    <i class="fas fa-clock"></i>
+                    Do This Later
+                </button>
+                <button class="btn-primary" id="popupSaveBtn">
+                    <i class="fas fa-check"></i>
+                    Save & Continue
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { startRoleMonitoring } from '../scripts/roleMonitor.js';
+        // Start monitoring role changes when dashboard loads
+        startRoleMonitoring();
+    </script>
     <script src="../scripts/dashboard.js"></script>
 </body>
+
 </html>

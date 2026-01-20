@@ -57,7 +57,7 @@ function formatDate(dateString) {
     const date = new Date(dateString);
     const format = currentUser.preferences.dateFormat;
     const timezone = currentUser.preferences.timezone;
-    
+
     // Convert to user's timezone
     const options = {
         timeZone: timezone,
@@ -65,9 +65,9 @@ function formatDate(dateString) {
         month: '2-digit',
         day: '2-digit'
     };
-    
+
     const localDate = new Intl.DateTimeFormat('en-US', options).format(date);
-    
+
     switch (format) {
         case 'DD/MM/YYYY':
             const [month, day, year] = localDate.split('/');
@@ -115,18 +115,18 @@ function showMessage(text, type = 'success') {
     // Remove any existing messages first
     const existingMessages = document.querySelectorAll('.message');
     existingMessages.forEach(msg => msg.remove());
-    
+
     const messageDiv = document.createElement('div');
     messageDiv.className = `message message-${type}`;
     messageDiv.innerHTML = `
         <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
         <span>${text}</span>
     `;
-    
+
     const mainContent = document.querySelector('.main-content');
     const firstSection = mainContent.querySelector('.content-section.active');
     firstSection.insertBefore(messageDiv, firstSection.firstChild);
-    
+
     // Auto remove after 3 seconds (reduced from 5)
     setTimeout(() => {
         if (messageDiv.parentNode) {
@@ -144,10 +144,10 @@ function updateStats() {
     const thisMonthCount = requests.filter(r => {
         const requestDate = new Date(r.dateSubmitted);
         const currentDate = new Date();
-        return requestDate.getMonth() === currentDate.getMonth() && 
-               requestDate.getFullYear() === currentDate.getFullYear();
+        return requestDate.getMonth() === currentDate.getMonth() &&
+            requestDate.getFullYear() === currentDate.getFullYear();
     }).length;
-    
+
     document.getElementById('pendingCount').textContent = pendingCount;
     document.getElementById('completedCount').textContent = completedCount;
     document.getElementById('thisMonth').textContent = thisMonthCount;
@@ -161,55 +161,55 @@ function updateStats() {
  */
 function initNavigation() {
     const navLinks = document.querySelectorAll('.nav-link');
-    
+
     navLinks.forEach(link => {
-        link.addEventListener('click', function(e) {
+        link.addEventListener('click', function (e) {
             e.preventDefault();
-            
+
             const sectionId = this.getAttribute('data-section');
             if (sectionId && sectionId !== currentSection) {
                 switchSection(sectionId);
-                
+
                 // Update active nav link
                 navLinks.forEach(l => l.classList.remove('active'));
                 this.classList.add('active');
-                
+
                 currentSection = sectionId;
-                
+
                 // Close mobile menu
                 closeMobileMenu();
-                
+
                 // Remove hints after first interaction
                 removeNavigationHints();
             }
         });
     });
-    
+
     // Logo click to toggle menu
     const navBrand = document.getElementById('navBrand');
     const sidebar = document.querySelector('.sidebar');
-    
+
     if (navBrand) {
-        navBrand.addEventListener('click', function() {
+        navBrand.addEventListener('click', function () {
             if (window.innerWidth <= 1024) {
                 toggleMobileMenu();
                 removeNavigationHints();
             }
         });
     }
-    
+
     // Close mobile menu when clicking outside
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         if (window.innerWidth <= 1024) {
             const sidebar = document.querySelector('.sidebar');
             const navBrand = document.getElementById('navBrand');
-            
+
             if (!sidebar.contains(e.target) && !navBrand.contains(e.target)) {
                 closeMobileMenu();
             }
         }
     });
-    
+
     // Initialize navigation hints
     initNavigationHints();
 }
@@ -220,19 +220,19 @@ function initNavigation() {
 function initNavigationHints() {
     const navBrand = document.getElementById('navBrand');
     const menuHint = document.getElementById('menuHint');
-    
+
     // Only show hints on mobile/tablet
     if (window.innerWidth <= 1024) {
         // Add subtle pulse animation to logo
         setTimeout(() => {
             navBrand.classList.add('pulse');
         }, 2000);
-        
+
         // Add bounce animation to hint arrow
         setTimeout(() => {
             menuHint.classList.add('bounce');
         }, 3000);
-        
+
         // Remove animations after 10 seconds
         setTimeout(() => {
             navBrand.classList.remove('pulse');
@@ -247,10 +247,10 @@ function initNavigationHints() {
 function removeNavigationHints() {
     const navBrand = document.getElementById('navBrand');
     const menuHint = document.getElementById('menuHint');
-    
+
     navBrand.classList.remove('pulse');
     menuHint.classList.remove('bounce');
-    
+
     // Store that user has discovered navigation
     localStorage.setItem('officeflow_nav_discovered', 'true');
 }
@@ -260,9 +260,9 @@ function removeNavigationHints() {
  */
 function toggleMobileMenu() {
     const sidebar = document.querySelector('.sidebar');
-    
+
     sidebar.classList.toggle('open');
-    
+
     // Add overlay for better UX
     if (sidebar.classList.contains('open')) {
         document.body.style.overflow = 'hidden';
@@ -276,7 +276,7 @@ function toggleMobileMenu() {
  */
 function closeMobileMenu() {
     const sidebar = document.querySelector('.sidebar');
-    
+
     sidebar.classList.remove('open');
     document.body.style.overflow = '';
 }
@@ -290,14 +290,14 @@ function switchSection(sectionId) {
     sections.forEach(section => {
         section.classList.remove('active');
     });
-    
+
     // Show target section
     const targetSection = document.getElementById(sectionId);
     if (targetSection) {
         targetSection.classList.add('active');
-        
+
         // Load section-specific content
-        switch(sectionId) {
+        switch (sectionId) {
             case 'overview':
                 loadOverview();
                 break;
@@ -335,7 +335,7 @@ function loadRecentActivity() {
     const recentRequests = requests
         .sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated))
         .slice(0, 5);
-    
+
     activityList.innerHTML = recentRequests.map(request => `
         <div class="activity-item">
             <div class="activity-icon">
@@ -381,11 +381,11 @@ function initRequestForm() {
     const leaveDaysEl = document.getElementById('leaveDays');
     const availEl = document.getElementById('availableLeave');
     const deductChk = document.getElementById('deductFromBalance');
-    
+
     if (form) {
         form.addEventListener('submit', handleFormSubmit);
     }
-    
+
     if (clearBtn) {
         clearBtn.addEventListener('click', clearForm);
     }
@@ -423,7 +423,7 @@ function initRequestForm() {
             }
         });
     }
-    
+
     // Add form validation
     const inputs = form.querySelectorAll('input, select, textarea');
     inputs.forEach(input => {
@@ -437,7 +437,7 @@ function initRequestForm() {
  */
 function handleFormSubmit(e) {
     e.preventDefault();
-    
+
     const formData = new FormData(e.target);
     const requestData = {
         id: generateRequestId(),
@@ -464,18 +464,18 @@ function handleFormSubmit(e) {
             return;
         }
     }
-    
+
     // Validate form
     if (!validateForm(requestData)) {
         return;
     }
-    
+
     // Add loading state
     const submitBtn = document.getElementById('submitRequest');
     const originalText = submitBtn.innerHTML;
     submitBtn.innerHTML = '<span class="spinner"></span> Submitting...';
     submitBtn.disabled = true;
-    
+
     // Simulate API call
     setTimeout(() => {
         // Add request to array
@@ -486,25 +486,25 @@ function handleFormSubmit(e) {
             currentUser.leaveBalance.annual = Math.max(0, currentUser.leaveBalance.annual - requestData.leave.days);
             updateLeaveBalance();
         }
-        
+
         // Reset form
         clearForm();
-        
+
         // Show success message
         showMessage('Request submitted successfully! You will receive updates via email.');
-        
+
         // Update stats
         updateStats();
-        
+
         // Reset button
         submitBtn.innerHTML = originalText;
         submitBtn.disabled = false;
-        
+
         // Switch to requests view
         switchSection('your-requests');
         document.querySelector('[data-section="your-requests"]').classList.add('active');
         document.querySelector('[data-section="submit-request"]').classList.remove('active');
-        
+
         console.log('New request submitted:', requestData);
     }, 1500);
 }
@@ -514,22 +514,22 @@ function handleFormSubmit(e) {
  */
 function validateForm(data) {
     let isValid = true;
-    
+
     if (!data.title.trim()) {
         showFieldError('requestTitle', 'Title is required');
         isValid = false;
     }
-    
+
     if (!data.category) {
         showFieldError('requestCategory', 'Category is required');
         isValid = false;
     }
-    
+
     if (!data.priority) {
         showFieldError('requestPriority', 'Priority is required');
         isValid = false;
     }
-    
+
     if (!data.description.trim()) {
         showFieldError('requestDescription', 'Description is required');
         isValid = false;
@@ -541,7 +541,7 @@ function validateForm(data) {
             isValid = false;
         }
     }
-    
+
     return isValid;
 }
 
@@ -564,7 +564,7 @@ function calculateLeaveDays(start, end) {
 function validateField(e) {
     const field = e.target;
     const value = field.value.trim();
-    
+
     if (field.hasAttribute('required') && !value) {
         showFieldError(field.id, `${field.name} is required`);
     }
@@ -576,13 +576,13 @@ function validateField(e) {
 function showFieldError(fieldId, message) {
     const field = document.getElementById(fieldId);
     field.classList.add('error');
-    
+
     // Remove existing error message
     const existingError = field.parentNode.querySelector('.field-error');
     if (existingError) {
         existingError.remove();
     }
-    
+
     // Add error message
     const errorDiv = document.createElement('div');
     errorDiv.className = 'field-error';
@@ -597,7 +597,7 @@ function showFieldError(fieldId, message) {
 function clearFieldError(e) {
     const field = e.target;
     field.classList.remove('error');
-    
+
     const errorDiv = field.parentNode.querySelector('.field-error');
     if (errorDiv) {
         errorDiv.remove();
@@ -610,13 +610,13 @@ function clearFieldError(e) {
 function clearForm() {
     const form = document.getElementById('requestForm');
     form.reset();
-    
+
     // Clear any error states
     const errorFields = form.querySelectorAll('.error');
     errorFields.forEach(field => {
         field.classList.remove('error');
     });
-    
+
     const errorMessages = form.querySelectorAll('.field-error');
     errorMessages.forEach(msg => msg.remove());
     // hide/reset leave fields if present
@@ -645,7 +645,7 @@ function loadYourRequests() {
  */
 function renderRequests() {
     const grid = document.getElementById('requestsGrid');
-    
+
     if (filteredRequests.length === 0) {
         grid.innerHTML = `
             <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--gray-500);">
@@ -656,7 +656,7 @@ function renderRequests() {
         `;
         return;
     }
-    
+
     grid.innerHTML = filteredRequests.map(request => `
         <div class="request-card">
             <div class="request-header">
@@ -683,10 +683,10 @@ function initFilters() {
     const statusFilter = document.getElementById('statusFilter');
     const categoryFilter = document.getElementById('categoryFilter');
     const clearFilters = document.getElementById('clearFilters');
-    
+
     statusFilter.addEventListener('change', applyFilters);
     categoryFilter.addEventListener('change', applyFilters);
-    clearFilters.addEventListener('click', function() {
+    clearFilters.addEventListener('click', function () {
         statusFilter.value = '';
         categoryFilter.value = '';
         applyFilters();
@@ -699,13 +699,13 @@ function initFilters() {
 function applyFilters() {
     const statusFilter = document.getElementById('statusFilter').value;
     const categoryFilter = document.getElementById('categoryFilter').value;
-    
+
     filteredRequests = requests.filter(request => {
         const matchesStatus = !statusFilter || request.status === statusFilter;
         const matchesCategory = !categoryFilter || request.category === categoryFilter;
         return matchesStatus && matchesCategory;
     });
-    
+
     renderRequests();
 }
 
@@ -735,26 +735,26 @@ function updateLeaveBalance() {
  */
 function initServiceButtons() {
     const serviceButtons = document.querySelectorAll('.service-btn');
-    
+
     serviceButtons.forEach(button => {
-        button.addEventListener('click', function() {
+        button.addEventListener('click', function () {
             const category = this.getAttribute('data-category');
             const type = this.getAttribute('data-type');
-            
+
             // Pre-fill form and switch to submit section
             switchSection('submit-request');
             document.querySelector('[data-section="submit-request"]').classList.add('active');
             document.querySelector('[data-section="overview"]').classList.remove('active');
-            
+
             // Update nav
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             document.querySelector('[data-section="submit-request"]').classList.add('active');
-            
+
             // Pre-fill form
             setTimeout(() => {
                 document.getElementById('requestCategory').value = category;
                 document.getElementById('requestTitle').focus();
-                
+
                 // Pre-fill title based on type
                 const titleSuggestions = {
                     'Hardware': 'Hardware Issue - ',
@@ -767,7 +767,7 @@ function initServiceButtons() {
                     'Documents': 'Document Request - ',
                     'Profile': 'Profile Update Request - '
                 };
-                
+
                 if (titleSuggestions[type]) {
                     document.getElementById('requestTitle').value = titleSuggestions[type];
                 }
@@ -829,14 +829,14 @@ function loadStoredUser() {
  */
 function handleLogout() {
     const logoutBtn = document.getElementById('logoutBtn');
-    
-    logoutBtn.addEventListener('click', function() {
+
+    logoutBtn.addEventListener('click', function () {
         // Show confirmation
         if (confirm('Are you sure you want to logout?')) {
             // Add loading state
             this.innerHTML = '<span class="spinner"></span> Logging out...';
             this.disabled = true;
-            
+
             // Simulate logout delay
             setTimeout(() => {
                 console.log('User logged out');
@@ -851,9 +851,12 @@ function handleLogout() {
 /**
  * Initialize dashboard when DOM is loaded
  */
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     console.log('officeFlow Dashboard Initialized');
-    
+
+    // Show loading overlay while initializing
+    const loadingOverlay = document.getElementById('loadingOverlay');
+
     // Initialize all components
     initNavigation();
     initRequestForm();
@@ -864,27 +867,40 @@ document.addEventListener('DOMContentLoaded', function() {
     initUserInterface();
     initSettingsActions();
     handleLogout();
-    
+
     // Apply user preferences
     applyAccessibilitySettings();
     applyTheme(currentUser.preferences.theme);
     applyColorScheme(currentUser.preferences.colorScheme);
-    
+
     // Load initial section
     loadOverview();
-    
-    // Check if user has discovered navigation before
-    const hasDiscoveredNav = localStorage.getItem('officeflow_nav_discovered');
-    if (!hasDiscoveredNav && window.innerWidth <= 1024) {
-        // Show hints for new users on mobile
-        setTimeout(() => {
-            initNavigationHints();
-        }, 1000);
-    }
-    
+
+    // Hide loading overlay after everything is loaded
+    setTimeout(() => {
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        // Check if user needs to complete profile
+        checkProfileCompletion();
+
+        // Check if user can request admin access
+        checkAdminRequestEligibility();
+
+        // Check if user has discovered navigation before
+        const hasDiscoveredNav = localStorage.getItem('officeflow_nav_discovered');
+        if (!hasDiscoveredNav && window.innerWidth <= 1024) {
+            // Show hints for new users on mobile
+            setTimeout(() => {
+                initNavigationHints();
+            }, 500);
+        }
+    }, 800); // Give time for content to render
+
     // Update stats periodically (simulate real-time updates)
     setInterval(updateStats, 30000); // Every 30 seconds
-    
+
     console.log('Dashboard ready for user interaction');
     console.log('Current user:', currentUser);
     console.log('Total requests:', requests.length);
@@ -969,6 +985,9 @@ function loadProfile() {
     updateProfileDisplay();
     initProfileForm();
     initAvatarSelection();
+
+    // Load latest departments from company settings
+    loadCompanyDepartments();
 }
 
 /**
@@ -978,11 +997,11 @@ function updateProfileDisplay() {
     document.getElementById('profileName').textContent = currentUser.name;
     document.getElementById('profileEmail').textContent = currentUser.email;
     document.getElementById('profileRole').textContent = currentUser.role;
-    
+
     // Update avatar
     const avatarLarge = document.getElementById('profileAvatarLarge');
     avatarLarge.innerHTML = `<i class="fas fa-${currentUser.avatar}"></i>`;
-    
+
     // Update form fields
     document.getElementById('firstName').value = currentUser.firstName;
     document.getElementById('lastName').value = currentUser.lastName;
@@ -1003,18 +1022,18 @@ function initProfileForm() {
     const profileForm = document.getElementById('profileForm');
     const resetBtn = document.getElementById('resetProfileForm');
     const deactivateBtn = document.getElementById('deactivateAccountBtn');
-    
+
     if (profileForm) {
         profileForm.addEventListener('submit', handleProfileSubmit);
     }
-    
+
     if (resetBtn) {
-        resetBtn.addEventListener('click', function() {
+        resetBtn.addEventListener('click', function () {
             updateProfileDisplay();
             showMessage('Form reset to current values', 'info');
         });
     }
-    
+
     if (deactivateBtn) {
         deactivateBtn.addEventListener('click', handleAccountDeactivation);
     }
@@ -1023,35 +1042,96 @@ function initProfileForm() {
 /**
  * Handle profile form submission
  */
-function handleProfileSubmit(e) {
+async function handleProfileSubmit(e) {
     e.preventDefault();
-    
+
     const formData = new FormData(e.target);
-    
-    // Update user data
-    currentUser.firstName = formData.get('firstName');
-    currentUser.lastName = formData.get('lastName');
-    currentUser.name = `${currentUser.firstName} ${currentUser.lastName}`;
-    currentUser.email = formData.get('email');
-    currentUser.phoneNumber = formData.get('phoneNumber');
-    currentUser.jobTitle = formData.get('jobTitle');
-    currentUser.preferences.defaultCategory = formData.get('defaultCategory');
-    currentUser.preferences.timezone = formData.get('timezone');
-    currentUser.preferences.dateFormat = formData.get('dateFormat');
-    currentUser.preferences.fontSize = formData.get('fontSize');
-    currentUser.preferences.highContrast = formData.get('highContrast') === 'on';
-    
-    // Apply accessibility settings
-    applyAccessibilitySettings();
-    
-    // Update UI
-    initUserInfo();
-    updateProfileDisplay();
-    
-    // Show success message
-    showMessage('Profile updated successfully!');
-    
-    console.log('Profile updated:', currentUser);
+    const jobTitle = formData.get('jobTitle');
+    const department = formData.get('department'); // If department field exists
+
+    try {
+        // Show loading state
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        submitBtn.disabled = true;
+
+        // Update profile via API if jobTitle or department changed
+        if (jobTitle !== currentUser.jobTitle || (department && department !== currentUser.department)) {
+            const token = localStorage.getItem('authToken');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            const updateData = {};
+            if (jobTitle !== currentUser.jobTitle) updateData.jobTitle = jobTitle;
+            if (department && department !== currentUser.department) updateData.department = department;
+
+            const response = await fetch(`http://localhost:3000/api/users/${user.id}/profile`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(updateData)
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Failed to update profile');
+            }
+
+            // Update localStorage
+            if (updateData.jobTitle) user.jobTitle = updateData.jobTitle;
+            if (updateData.department) user.department = updateData.department;
+            localStorage.setItem('user', JSON.stringify(user));
+
+            // Notify other tabs/windows
+            const timestamp = Date.now().toString();
+            localStorage.setItem('officeflow_user_updated', timestamp);
+            console.log('Profile update notification sent from main form:', timestamp);
+        }
+
+        // Update local user data (for UI preferences and other non-API fields)
+        currentUser.firstName = formData.get('firstName');
+        currentUser.lastName = formData.get('lastName');
+        currentUser.name = `${currentUser.firstName} ${currentUser.lastName}`;
+        currentUser.email = formData.get('email');
+        currentUser.phoneNumber = formData.get('phoneNumber');
+        currentUser.jobTitle = jobTitle;
+        if (department) currentUser.department = department;
+        currentUser.preferences.defaultCategory = formData.get('defaultCategory');
+        currentUser.preferences.timezone = formData.get('timezone');
+        currentUser.preferences.dateFormat = formData.get('dateFormat');
+        currentUser.preferences.fontSize = formData.get('fontSize');
+        currentUser.preferences.highContrast = formData.get('highContrast') === 'on';
+
+        // Apply accessibility settings
+        applyAccessibilitySettings();
+
+        // Update UI
+        initUserInfo();
+        updateProfileDisplay();
+
+        // Show success message
+        showMessage('Profile updated successfully!');
+
+        console.log('Profile updated:', currentUser);
+
+        // Reset button state
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+
+    } catch (error) {
+        console.error('Error updating profile:', error);
+        showMessage('Failed to update profile: ' + error.message, 'error');
+
+        // Reset button state
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.innerHTML = 'Save Changes';
+            submitBtn.disabled = false;
+        }
+    }
 }
 
 /**
@@ -1066,7 +1146,7 @@ function handleAccountDeactivation() {
         '• Require admin approval to reactivate\n\n' +
         'This action cannot be undone without admin intervention.'
     );
-    
+
     if (confirmed) {
         showMessage('Account deactivation request submitted. An administrator will review your request.', 'info');
         console.log('Account deactivation requested for user:', currentUser.id);
@@ -1083,13 +1163,13 @@ function initAvatarSelection() {
     const cancelBtn = document.getElementById('cancelAvatarChange');
     const confirmBtn = document.getElementById('confirmAvatarChange');
     const avatarOptions = document.querySelectorAll('.avatar-option');
-    
+
     let selectedAvatar = currentUser.avatar;
-    
+
     // Open modal
-    changeAvatarBtn.addEventListener('click', function() {
+    changeAvatarBtn.addEventListener('click', function () {
         avatarModal.classList.add('active');
-        
+
         // Set current avatar as selected
         avatarOptions.forEach(option => {
             option.classList.remove('active');
@@ -1098,41 +1178,41 @@ function initAvatarSelection() {
             }
         });
     });
-    
+
     // Close modal
     function closeAvatarModal() {
         avatarModal.classList.remove('active');
     }
-    
+
     closeModal.addEventListener('click', closeAvatarModal);
     cancelBtn.addEventListener('click', closeAvatarModal);
-    
+
     // Avatar selection
     avatarOptions.forEach(option => {
-        option.addEventListener('click', function() {
+        option.addEventListener('click', function () {
             avatarOptions.forEach(opt => opt.classList.remove('active'));
             this.classList.add('active');
             selectedAvatar = this.getAttribute('data-avatar');
         });
     });
-    
+
     // Confirm avatar change
-    confirmBtn.addEventListener('click', function() {
+    confirmBtn.addEventListener('click', function () {
         currentUser.avatar = selectedAvatar;
-        
+
         // Update all avatar displays
         const userAvatar = document.querySelector('.user-avatar i');
         const profileAvatarLarge = document.getElementById('profileAvatarLarge');
-        
+
         userAvatar.className = `fas fa-${selectedAvatar}`;
         profileAvatarLarge.innerHTML = `<i class="fas fa-${selectedAvatar}"></i>`;
-        
+
         closeAvatarModal();
         showMessage('Avatar updated successfully!');
     });
-    
+
     // Close modal when clicking outside
-    avatarModal.addEventListener('click', function(e) {
+    avatarModal.addEventListener('click', function (e) {
         if (e.target === avatarModal) {
             closeAvatarModal();
         }
@@ -1158,15 +1238,15 @@ function initSettingsTabs() {
     const tabs = document.querySelectorAll('.settings-tab');
     const contents = document.querySelectorAll('.settings-content');
     const goToProfileBtn = document.getElementById('goToProfile');
-    
+
     tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
+        tab.addEventListener('click', function () {
             const targetTab = this.getAttribute('data-tab');
-            
+
             // Update active tab
             tabs.forEach(t => t.classList.remove('active'));
             this.classList.add('active');
-            
+
             // Update active content
             contents.forEach(content => {
                 content.classList.remove('active');
@@ -1176,10 +1256,10 @@ function initSettingsTabs() {
             });
         });
     });
-    
+
     // Go to profile button
     if (goToProfileBtn) {
-        goToProfileBtn.addEventListener('click', function() {
+        goToProfileBtn.addEventListener('click', function () {
             switchSection('profile');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             document.querySelector('[data-section="profile"]').classList.add('active');
@@ -1193,23 +1273,23 @@ function initSettingsTabs() {
 function initThemeSettings() {
     const themeInputs = document.querySelectorAll('input[name="theme"]');
     const colorSchemeInputs = document.querySelectorAll('input[name="colorScheme"]');
-    
+
     // Set current values
     themeInputs.forEach(input => {
         if (input.value === currentUser.preferences.theme) {
             input.checked = true;
         }
     });
-    
+
     colorSchemeInputs.forEach(input => {
         if (input.value === currentUser.preferences.colorScheme) {
             input.checked = true;
         }
     });
-    
+
     // Theme change handlers
     themeInputs.forEach(input => {
-        input.addEventListener('change', function() {
+        input.addEventListener('change', function () {
             if (this.checked) {
                 currentUser.preferences.theme = this.value;
                 applyTheme(this.value);
@@ -1220,10 +1300,10 @@ function initThemeSettings() {
             }
         });
     });
-    
+
     // Color scheme change handlers
     colorSchemeInputs.forEach(input => {
-        input.addEventListener('change', function() {
+        input.addEventListener('change', function () {
             if (this.checked) {
                 applyColorScheme(this.value);
                 // Only show message for non-default color schemes
@@ -1240,10 +1320,10 @@ function initThemeSettings() {
  */
 function applyTheme(theme) {
     const body = document.body;
-    
+
     // Remove existing theme classes
     body.classList.remove('light-theme', 'dark-theme', 'auto-theme');
-    
+
     if (theme === 'dark') {
         body.classList.add('dark-theme');
     } else if (theme === 'auto') {
@@ -1260,7 +1340,7 @@ function applyTheme(theme) {
  */
 function applyColorScheme(scheme) {
     const root = document.documentElement;
-    
+
     switch (scheme) {
         case 'cool':
             // Cool blue/cyan theme
@@ -1311,7 +1391,7 @@ function applyColorScheme(scheme) {
             root.style.setProperty('--gradient-bg', 'linear-gradient(135deg, #fef7ed 0%, #fed7aa 25%, #fecaca 50%, #fef3c7 75%, #fef7ed 100%)');
             break;
     }
-    
+
     // Update current user preference
     currentUser.preferences.colorScheme = scheme;
 }
@@ -1321,15 +1401,15 @@ function applyColorScheme(scheme) {
  */
 function initNotificationSettings() {
     const notificationInputs = document.querySelectorAll('#notifications input[type="checkbox"]');
-    
+
     notificationInputs.forEach(input => {
-        input.addEventListener('change', function() {
+        input.addEventListener('change', function () {
             const setting = this.id;
             const enabled = this.checked;
-            
+
             // Store preference (would sync with backend in real app)
             console.log(`Notification setting ${setting}: ${enabled}`);
-            
+
             showMessage(`${enabled ? 'Enabled' : 'Disabled'} ${setting.replace(/([A-Z])/g, ' $1').toLowerCase()}`, 'info');
         });
     });
@@ -1340,15 +1420,15 @@ function initNotificationSettings() {
  */
 function initPrivacySettings() {
     const privacyInputs = document.querySelectorAll('#privacy input[type="checkbox"]');
-    
+
     privacyInputs.forEach(input => {
-        input.addEventListener('change', function() {
+        input.addEventListener('change', function () {
             const setting = this.id;
             const enabled = this.checked;
-            
+
             // Store preference (would sync with backend in real app)
             console.log(`Privacy setting ${setting}: ${enabled}`);
-            
+
             showMessage(`${enabled ? 'Enabled' : 'Disabled'} ${setting.replace(/([A-Z])/g, ' $1').toLowerCase()}`, 'info');
         });
     });
@@ -1361,11 +1441,11 @@ function applyAccessibilitySettings() {
     const body = document.body;
     const fontSize = currentUser.preferences.fontSize;
     const highContrast = currentUser.preferences.highContrast;
-    
+
     // Remove existing font size classes
     body.classList.remove('font-small', 'font-medium', 'font-large', 'font-extra-large');
     body.classList.add(`font-${fontSize}`);
-    
+
     // Apply high contrast
     if (highContrast) {
         body.classList.add('high-contrast');
@@ -1380,9 +1460,9 @@ function applyAccessibilitySettings() {
 function initSettingsActions() {
     const resetBtn = document.getElementById('resetSettings');
     const saveBtn = document.getElementById('saveSettings');
-    
+
     if (resetBtn) {
-        resetBtn.addEventListener('click', function() {
+        resetBtn.addEventListener('click', function () {
             if (confirm('Reset all settings to default values?')) {
                 // Reset to defaults
                 currentUser.preferences = {
@@ -1394,20 +1474,20 @@ function initSettingsActions() {
                     theme: 'light',
                     colorScheme: 'warm'
                 };
-                
+
                 // Reload settings
                 loadSettings();
                 applyAccessibilitySettings();
                 applyTheme('light');
                 applyColorScheme('warm');
-                
+
                 showMessage('Settings reset to defaults');
             }
         });
     }
-    
+
     if (saveBtn) {
-        saveBtn.addEventListener('click', function() {
+        saveBtn.addEventListener('click', function () {
             showMessage('Settings saved successfully!');
             console.log('Settings saved:', currentUser.preferences);
         });
@@ -1422,20 +1502,20 @@ function initSettingsActions() {
 function initUserInterface() {
     const userAvatarBtn = document.getElementById('userAvatarBtn');
     const settingsBtn = document.getElementById('settingsBtn');
-    
+
     // User avatar click - go to profile
     if (userAvatarBtn) {
-        userAvatarBtn.addEventListener('click', function() {
+        userAvatarBtn.addEventListener('click', function () {
             switchSection('profile');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             document.querySelector('[data-section="profile"]').classList.add('active');
             currentSection = 'profile';
         });
     }
-    
+
     // Settings button click - go to settings
     if (settingsBtn) {
-        settingsBtn.addEventListener('click', function() {
+        settingsBtn.addEventListener('click', function () {
             switchSection('settings');
             document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
             document.querySelector('[data-section="settings"]').classList.add('active');
@@ -1443,3 +1523,266 @@ function initUserInterface() {
         });
     }
 }
+
+
+// ===== WELCOME MODAL FOR NEW USERS =====
+
+/**
+ * Show welcome modal for new users
+ */
+function showWelcomeModal() {
+    const modal = document.getElementById('welcomeModal');
+    if (modal) {
+        modal.style.display = 'flex';
+
+        // Mark as shown
+        localStorage.setItem('officeflow_welcome_shown', 'true');
+    }
+}
+
+/**
+ * Initialize welcome modal buttons
+ */
+document.getElementById('welcomeCustomize')?.addEventListener('click', function () {
+    // Close modal
+    const modal = document.getElementById('welcomeModal');
+    if (modal) modal.style.display = 'none';
+
+    // Navigate to profile section
+    loadSection('profile');
+
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+});
+
+document.getElementById('welcomeLater')?.addEventListener('click', function () {
+    // Just close the modal
+    const modal = document.getElementById('welcomeModal');
+    if (modal) modal.style.display = 'none';
+});
+
+
+// ===== PROFILE CUSTOMIZATION POPUP =====
+
+/**
+ * Check if user needs to complete their profile
+ */
+async function checkProfileCompletion() {
+    // If user already has both department and job title, mark as completed
+    if (currentUser.department && currentUser.jobTitle) {
+        localStorage.setItem('officeflow_profile_completed', 'true');
+        return; // Don't show popup
+    }
+
+    // Check if user has already been prompted
+    const hasCompletedProfile = localStorage.getItem('officeflow_profile_completed');
+
+    // Only show popup if not completed AND missing department or job title
+    if (!hasCompletedProfile) {
+        // Load company departments
+        await loadCompanyDepartments();
+
+        // Show popup after a short delay
+        setTimeout(() => {
+            showProfilePopup();
+        }, 1000);
+    }
+}
+
+/**
+ * Load company departments for the popup
+ */
+async function loadCompanyDepartments() {
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('http://localhost:3000/api/company/settings', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.company.settings.departments) {
+                // Populate both popup and profile form department dropdowns
+                const departments = data.company.settings.departments;
+
+                const popupSelect = document.getElementById('popupDepartment');
+                const profileSelect = document.getElementById('department');
+
+                const options = departments.map(dept =>
+                    `<option value="${dept}">${dept}</option>`
+                ).join('');
+
+                if (popupSelect) {
+                    popupSelect.innerHTML = '<option value="">Select your department</option>' + options;
+                }
+
+                if (profileSelect) {
+                    profileSelect.innerHTML = '<option value="">Select Department</option>' + options;
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error loading departments:', error);
+    }
+}
+
+/**
+ * Show profile customization popup
+ */
+function showProfilePopup() {
+    const overlay = document.getElementById('profilePopupOverlay');
+    if (overlay) {
+        overlay.classList.add('show');
+
+        // Set current values if they exist
+        if (currentUser.department) {
+            document.getElementById('popupDepartment').value = currentUser.department;
+        }
+        if (currentUser.jobTitle) {
+            document.getElementById('popupJobTitle').value = currentUser.jobTitle;
+        }
+    }
+}
+
+/**
+ * Hide profile customization popup
+ */
+function hideProfilePopup() {
+    const overlay = document.getElementById('profilePopupOverlay');
+    if (overlay) {
+        overlay.classList.remove('show');
+    }
+}
+
+/**
+ * Save profile from popup
+ */
+async function saveProfileFromPopup() {
+    const department = document.getElementById('popupDepartment').value;
+    const jobTitle = document.getElementById('popupJobTitle').value.trim();
+
+    if (!department) {
+        alert('Please select your department');
+        return;
+    }
+
+    if (!jobTitle) {
+        alert('Please enter your job title');
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        console.log('Saving profile:', { userId: user.id, department, jobTitle });
+
+        const response = await fetch(`http://localhost:3000/api/users/${user.id}/profile`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ department, jobTitle })
+        });
+
+        const data = await response.json();
+        console.log('Profile update response:', data);
+
+        if (response.ok && data.success) {
+            // Update local user data
+            currentUser.department = department;
+            currentUser.jobTitle = jobTitle;
+            user.department = department;
+            user.jobTitle = jobTitle;
+            localStorage.setItem('user', JSON.stringify(user));
+            localStorage.setItem('officeflow_profile_completed', 'true');
+
+            // Update UI
+            initUserInfo();
+
+            // Hide popup
+            hideProfilePopup();
+
+            // Show success message
+            showMessage('Profile updated successfully!', 'success');
+
+            // Notify other tabs/windows that user data changed
+            // This will help admin dashboards refresh their user lists
+            const timestamp = Date.now().toString();
+            localStorage.setItem('officeflow_user_updated', timestamp);
+            console.log('Profile update notification sent:', timestamp);
+        } else {
+            console.error('Profile update failed:', data);
+            alert(data.message || 'Failed to update profile. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error saving profile:', error);
+        alert('An error occurred. Please try again.');
+    }
+}
+
+// Profile popup event listeners
+document.getElementById('popupLaterBtn')?.addEventListener('click', () => {
+    hideProfilePopup();
+    // Don't mark as completed so it shows again next time
+});
+
+document.getElementById('popupSaveBtn')?.addEventListener('click', () => {
+    saveProfileFromPopup();
+});
+
+
+// ===== ADMIN REQUEST FUNCTIONALITY =====
+
+/**
+ * Show/hide admin request section based on user role
+ */
+function checkAdminRequestEligibility() {
+    const adminRequestSection = document.getElementById('adminRequestSection');
+
+    if (adminRequestSection && currentUser.role === 'user') {
+        adminRequestSection.style.display = 'block';
+    }
+}
+
+/**
+ * Request admin access
+ */
+async function requestAdminAccess() {
+    if (currentUser.role !== 'user') {
+        alert('Only regular users can request admin access');
+        return;
+    }
+
+    if (!confirm('Are you sure you want to request admin access? This will be sent to the Super Admin for approval.')) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('http://localhost:3000/api/request-admin', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+            showMessage('Admin request submitted successfully! You will be notified once reviewed.', 'success');
+            // Hide the request section
+            document.getElementById('adminRequestSection').style.display = 'none';
+        } else {
+            alert(data.message || 'Failed to submit request');
+        }
+    } catch (error) {
+        console.error('Error requesting admin access:', error);
+        alert('An error occurred. Please try again.');
+    }
+}
+
+// Admin request button handler
+document.getElementById('requestAdminBtn')?.addEventListener('click', requestAdminAccess);

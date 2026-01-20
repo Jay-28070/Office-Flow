@@ -42,13 +42,18 @@
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
     animation: rotate 20s linear infinite;
 }
 
 @keyframes rotate {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 .logo-placeholder {
@@ -237,13 +242,13 @@
     transform: scale(1.1);
 }
 
-.checkbox-wrapper input:checked ~ .checkmark {
+.checkbox-wrapper input:checked~.checkmark {
     background: var(--primary-color);
     border-color: var(--primary-color);
     transform: scale(1.1);
 }
 
-.checkbox-wrapper input:checked ~ .checkmark::after {
+.checkbox-wrapper input:checked~.checkmark::after {
     content: '✓';
     color: var(--white);
     font-size: 0.875rem;
@@ -295,7 +300,7 @@
     left: -100%;
     width: 100%;
     height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
     transition: var(--transition-slow);
 }
 
@@ -384,23 +389,23 @@
     .auth-body {
         padding: 0.5rem;
     }
-    
+
     .brand-section {
         padding: 2rem 1.5rem;
     }
-    
+
     .form-section {
         padding: 2rem 1.5rem;
     }
-    
+
     .brand-name {
         font-size: 1.75rem;
     }
-    
+
     .form-title {
         font-size: 1.5rem;
     }
-    
+
     .form-options {
         flex-direction: column;
         align-items: flex-start;
@@ -412,24 +417,24 @@
     .brand-section {
         padding: 1.5rem 1rem;
     }
-    
+
     .form-section {
         padding: 1.5rem 1rem;
     }
-    
+
     .brand-name {
         font-size: 1.5rem;
     }
-    
+
     .form-title {
         font-size: 1.25rem;
     }
-    
+
     .logo-placeholder {
         width: 3rem;
         height: 3rem;
     }
-    
+
     .logo-placeholder i {
         font-size: 1.25rem;
     }
@@ -473,7 +478,7 @@
     margin: 0;
 }
 
-.radio-option input[type="radio"]:checked + span {
+.radio-option input[type="radio"]:checked+span {
     font-weight: 600;
     color: var(--primary-color);
 }
@@ -481,4 +486,172 @@
 .radio-option:has(input[type="radio"]:checked) {
     border-color: var(--primary-color);
     background: rgba(99, 102, 241, 0.05);
+}
+
+
+/* ===== ENHANCED FORM INPUT DECORATIONS ===== */
+.form-input:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.1);
+    transform: translateY(-1px);
+}
+
+.form-input::placeholder {
+    color: var(--gray-400);
+    font-style: italic;
+}
+
+select.form-input {
+    cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23475569' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+}
+
+select.form-input:focus {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23fb923c' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+}
+
+.form-group small {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--gray-600);
+    line-height: 1.4;
+}
+
+.form-group small i {
+    margin-right: 0.25rem;
+    color: var(--primary-color);
+}
+
+/* Animated label effect */
+.form-label {
+    position: relative;
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.form-label i {
+    transition: transform 0.3s ease;
+}
+
+.form-input:focus+.form-label i,
+.form-group:focus-within .form-label i {
+    transform: scale(1.1);
+}
+
+/* Success state for validated inputs */
+.form-input.valid {
+    border-color: var(--success-color);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Cpath fill='%2310b981' d='M13.5 3.5L6 11 2.5 7.5l1-1L6 9l6.5-6.5z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 3rem;
+}
+
+/* Loading state for inputs */
+.form-input.loading {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='6' fill='none' stroke='%23fb923c' stroke-width='2' stroke-dasharray='30' stroke-dashoffset='0'%3E%3CanimateTransform attributeName='transform' type='rotate' from='0 8 8' to='360 8 8' dur='1s' repeatCount='indefinite'/%3E%3C/circle%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 3rem;
+}
+
+/* Enhanced radio options */
+.radio-option {
+    position: relative;
+    padding-left: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.radio-option:hover {
+    transform: translateX(3px);
+}
+
+.radio-option input:checked+span {
+    font-weight: 600;
+    color: var(--primary-color);
+}
+
+/* Enhanced error messages */
+.error-message {
+    display: block;
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: var(--error-color);
+    font-weight: 500;
+    animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-5px);
+    }
+
+    75% {
+        transform: translateX(5px);
+    }
+}
+
+.error-message:empty {
+    display: none;
+}
+
+/* Input group animations */
+.form-group {
+    animation: slideInUp 0.4s ease;
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Stagger animation for form groups */
+.form-group:nth-child(1) {
+    animation-delay: 0.05s;
+}
+
+.form-group:nth-child(2) {
+    animation-delay: 0.1s;
+}
+
+.form-group:nth-child(3) {
+    animation-delay: 0.15s;
+}
+
+.form-group:nth-child(4) {
+    animation-delay: 0.2s;
+}
+
+.form-group:nth-child(5) {
+    animation-delay: 0.25s;
+}
+
+.form-group:nth-child(6) {
+    animation-delay: 0.3s;
+}
+
+.form-group:nth-child(7) {
+    animation-delay: 0.35s;
+}
+
+.form-group:nth-child(8) {
+    animation-delay: 0.4s;
 }

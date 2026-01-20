@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - officeFlow</title>
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
     <link rel="stylesheet" href="../styles/base.css">
     <link rel="stylesheet" href="../styles/authPages.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
 <body class="auth-body">
     <!-- Animated Background -->
     <div class="background-animation">
@@ -36,21 +39,15 @@
             <div class="form-section">
                 <h2 class="form-title">Create Account</h2>
                 <p class="form-subtitle">Join officeFlow today</p>
-                
+
                 <form id="registerForm" class="auth-form">
                     <div class="form-group">
                         <label for="fullName" class="form-label">
                             <i class="fas fa-user"></i>
                             Full Name
                         </label>
-                        <input 
-                            type="text" 
-                            id="fullName" 
-                            name="fullName" 
-                            class="form-input" 
-                            placeholder="Enter your full name"
-                            required
-                        >
+                        <input type="text" id="fullName" name="fullName" class="form-input"
+                            placeholder="Enter your full name" required>
                         <span class="error-message" id="fullNameError"></span>
                     </div>
 
@@ -59,14 +56,8 @@
                             <i class="fas fa-envelope"></i>
                             Email Address
                         </label>
-                        <input 
-                            type="email" 
-                            id="email" 
-                            name="email" 
-                            class="form-input" 
-                            placeholder="Enter your email"
-                            required
-                        >
+                        <input type="email" id="email" name="email" class="form-input" placeholder="Enter your email"
+                            required>
                         <span class="error-message" id="emailError"></span>
                     </div>
 
@@ -76,14 +67,8 @@
                             Password
                         </label>
                         <div class="password-input-wrapper">
-                            <input 
-                                type="password" 
-                                id="password" 
-                                name="password" 
-                                class="form-input" 
-                                placeholder="Create a password"
-                                required
-                            >
+                            <input type="password" id="password" name="password" class="form-input"
+                                placeholder="Create a password" required>
                             <button type="button" class="password-toggle" id="passwordToggle">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -97,14 +82,8 @@
                             Confirm Password
                         </label>
                         <div class="password-input-wrapper">
-                            <input 
-                                type="password" 
-                                id="confirmPassword" 
-                                name="confirmPassword" 
-                                class="form-input" 
-                                placeholder="Confirm your password"
-                                required
-                            >
+                            <input type="password" id="confirmPassword" name="confirmPassword" class="form-input"
+                                placeholder="Confirm your password" required>
                             <button type="button" class="password-toggle" id="confirmPasswordToggle">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -136,14 +115,36 @@
                             <i class="fas fa-key"></i>
                             Company Code
                         </label>
-                        <input 
-                            type="text" 
-                            id="companyCode" 
-                            name="companyCode" 
-                            class="form-input" 
-                            placeholder="Enter company code"
-                        >
+                        <input type="text" id="companyCode" name="companyCode" class="form-input"
+                            placeholder="Enter company code">
                         <span class="error-message" id="companyCodeError"></span>
+                    </div>
+
+                    <!-- Employee Department & Job Title (shown after company code is verified) -->
+                    <div id="employeeDetailsGroup" style="display: none;">
+                        <div class="form-group">
+                            <label for="employeeDepartment" class="form-label">
+                                <i class="fas fa-briefcase"></i>
+                                Department
+                            </label>
+                            <select id="employeeDepartment" name="employeeDepartment" class="form-input">
+                                <option value="">Select your department</option>
+                            </select>
+                            <span class="error-message" id="employeeDepartmentError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="employeeJobTitle" class="form-label">
+                                <i class="fas fa-id-badge"></i>
+                                Job Title
+                            </label>
+                            <input type="text" id="employeeJobTitle" name="employeeJobTitle" class="form-input"
+                                placeholder="e.g., Software Developer, HR Coordinator">
+                            <span class="error-message" id="employeeJobTitleError"></span>
+                            <small style="color: var(--gray-600); margin-top: 0.5rem; display: block;">
+                                Enter your position within the department
+                            </small>
+                        </div>
                     </div>
 
                     <!-- Create Company -->
@@ -152,13 +153,8 @@
                             <i class="fas fa-building"></i>
                             Company Name
                         </label>
-                        <input 
-                            type="text" 
-                            id="companyName" 
-                            name="companyName" 
-                            class="form-input" 
-                            placeholder="Enter company name"
-                        >
+                        <input type="text" id="companyName" name="companyName" class="form-input"
+                            placeholder="Enter company name">
                         <span class="error-message" id="companyNameError"></span>
                         <small style="color: var(--gray-600); margin-top: 0.5rem; display: block;">
                             You will become the Super Admin of this company
@@ -180,7 +176,7 @@
                 </form>
 
                 <div class="form-footer">
-                    <p>Already have an account? 
+                    <p>Already have an account?
                         <a href="login.html" class="auth-link">Sign in here</a>
                     </p>
                     <p class="back-home">
@@ -195,4 +191,5 @@
 
     <script type="module" defer src="../scripts/script.js"></script>
 </body>
+
 </html>

@@ -3,9 +3,9 @@
  * Handles login and registration with Firebase Authentication
  */
 
-import { 
-    auth, 
-    signInWithEmailAndPassword, 
+import {
+    auth,
+    signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
     signOut,
     onAuthStateChanged,
@@ -54,24 +54,72 @@ function initFormListeners() {
     const companyOptions = document.querySelectorAll('input[name="companyOption"]');
     if (companyOptions.length > 0) {
         companyOptions.forEach(option => {
-            option.addEventListener('change', function() {
+            option.addEventListener('change', function () {
                 const joinGroup = document.getElementById('joinCompanyGroup');
                 const createGroup = document.getElementById('createCompanyGroup');
-                
+                const employeeDetailsGroup = document.getElementById('employeeDetailsGroup');
+
                 if (this.value === 'join') {
                     joinGroup.style.display = 'block';
                     createGroup.style.display = 'none';
+                    if (employeeDetailsGroup) employeeDetailsGroup.style.display = 'none';
                     document.getElementById('companyCode').required = true;
                     document.getElementById('companyName').required = false;
                 } else {
                     joinGroup.style.display = 'none';
                     createGroup.style.display = 'block';
+                    if (employeeDetailsGroup) employeeDetailsGroup.style.display = 'none';
                     document.getElementById('companyCode').required = false;
                     document.getElementById('companyName').required = true;
                 }
             });
         });
     }
+
+    // Company code verification
+    const companyCodeInput = document.getElementById('companyCode');
+    if (companyCodeInput) {
+        companyCodeInput.addEventListener('blur', async function () {
+            const code = this.value.trim();
+            if (!code) return;
+
+            try {
+                // Verify company code and get departments
+                const response = await fetch(`${API_BASE_URL}/api/verify-company-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ companyCode: code })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Show employee details fields
+                    const employeeDetailsGroup = document.getElementById('employeeDetailsGroup');
+                    const departmentSelect = document.getElementById('employeeDepartment');
+
+                    if (employeeDetailsGroup && departmentSelect) {
+                        // Populate departments
+                        departmentSelect.innerHTML = '<option value="">Select your department</option>' +
+                            data.departments.map(dept => `<option value="${dept}">${dept}</option>`).join('');
+
+                        employeeDetailsGroup.style.display = 'block';
+                        document.getElementById('employeeDepartment').required = true;
+                        document.getElementById('employeeJobTitle').required = true;
+                    }
+
+                    document.getElementById('companyCodeError').textContent = '';
+                } else {
+                    document.getElementById('companyCodeError').textContent = 'Invalid company code';
+                    const employeeDetailsGroup = document.getElementById('employeeDetailsGroup');
+                    if (employeeDetailsGroup) employeeDetailsGroup.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('Error verifying company code:', error);
+            }
+        });
+    }
+
     // Login form
     const loginForm = document.getElementById('loginForm');
     if (loginForm) {
@@ -98,7 +146,15 @@ function initFormListeners() {
                 return;
             }
 
-            // Show loading state
+            // Show loading overlay
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            if (loadingOverlay) {
+                loadingOverlay.classList.remove('hidden');
+                const loadingText = loadingOverlay.querySelector('.loading-text');
+                if (loadingText) loadingText.textContent = 'Logging in...';
+            }
+
+            // Show loading state on button
             const submitBtn = loginForm.querySelector('button[type="submit"]');
             const originalBtnText = submitBtn.innerHTML;
             submitBtn.disabled = true;
@@ -115,11 +171,17 @@ function initFormListeners() {
                 const idToken = await firebaseUser.getIdToken();
                 console.log('Got Firebase ID token');
 
+                // Update loading text
+                if (loadingOverlay) {
+                    const loadingText = loadingOverlay.querySelector('.loading-text');
+                    if (loadingText) loadingText.textContent = 'Loading your dashboard...';
+                }
+
                 // Fetch user data from backend
                 console.log('Fetching user data from backend...');
                 const response = await fetch(`${API_BASE_URL}/api/auth/user-data`, {
                     method: 'GET',
-                    headers: { 
+                    headers: {
                         'Authorization': `Bearer ${idToken}`,
                         'Content-Type': 'application/json'
                     }
@@ -135,6 +197,7 @@ function initFormListeners() {
                     await signOut(auth);
                     submitBtn.disabled = false;
                     submitBtn.innerHTML = originalBtnText;
+                    if (loadingOverlay) loadingOverlay.classList.add('hidden');
                     return;
                 }
 
@@ -143,7 +206,7 @@ function initFormListeners() {
                 localStorage.setItem('user', JSON.stringify(data.user));
 
                 alert('Login successful!');
-                
+
                 // Redirect based on user role
                 if (data.user.role === 'superadmin') {
                     window.location.href = '../../admin/pages/super_admin_dashboard.html';
@@ -157,7 +220,7 @@ function initFormListeners() {
                 console.error('Error code:', err.code);
                 console.error('Error message:', err.message);
                 let errorMessage = 'An error occurred. Please try again.';
-                
+
                 // Handle Firebase auth errors
                 if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
                     errorMessage = 'Invalid email or password.';
@@ -166,10 +229,11 @@ function initFormListeners() {
                 } else if (err.code === 'auth/network-request-failed') {
                     errorMessage = 'Network error. Please check your connection.';
                 }
-                
+
                 alert(errorMessage);
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnText;
+                if (loadingOverlay) loadingOverlay.classList.add('hidden');
             }
         });
     }
@@ -208,7 +272,7 @@ function initFormListeners() {
                 document.getElementById('emailError').textContent = 'Email is required.';
                 return;
             }
-            
+
             // Email format validation
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
@@ -216,20 +280,20 @@ function initFormListeners() {
                 document.getElementById('emailError').textContent = 'Please enter a valid email address.';
                 return;
             }
-            
+
             if (!password) {
                 alert('Password is required.');
                 document.getElementById('passwordError').textContent = 'Password is required.';
                 return;
             }
-            
+
             // Password strength validation
             if (password.length < 6) {
                 alert('Password must be at least 6 characters long.');
                 document.getElementById('passwordError').textContent = 'Password must be at least 6 characters long.';
                 return;
             }
-            
+
             if (password !== confirmPassword) {
                 alert('Passwords do not match.');
                 document.getElementById('confirmPasswordError').textContent = 'Passwords do not match.';
@@ -241,6 +305,24 @@ function initFormListeners() {
                 alert('Company code is required.');
                 document.getElementById('companyCodeError').textContent = 'Company code is required.';
                 return;
+            }
+
+            // Employee details validation (when joining company)
+            if (companyOption === 'join') {
+                const department = formData.get('employeeDepartment');
+                const jobTitle = formData.get('employeeJobTitle');
+
+                if (!department) {
+                    alert('Please select your department.');
+                    document.getElementById('employeeDepartmentError').textContent = 'Department is required.';
+                    return;
+                }
+
+                if (!jobTitle || jobTitle.trim() === '') {
+                    alert('Please enter your job title.');
+                    document.getElementById('employeeJobTitleError').textContent = 'Job title is required.';
+                    return;
+                }
             }
 
             if (companyOption === 'create' && !companyName) {
@@ -278,13 +360,15 @@ function initFormListeners() {
 
                 if (companyOption === 'join') {
                     requestBody.companyCode = companyCode;
+                    requestBody.department = formData.get('employeeDepartment');
+                    requestBody.jobTitle = formData.get('employeeJobTitle');
                 } else {
                     requestBody.companyName = companyName;
                 }
 
                 const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
                     method: 'POST',
-                    headers: { 
+                    headers: {
                         'Authorization': `Bearer ${idToken}`,
                         'Content-Type': 'application/json'
                     },
@@ -303,14 +387,14 @@ function initFormListeners() {
                 }
 
                 alert(data.message);
-                
+
                 // Sign out and redirect to login
                 await signOut(auth);
                 window.location.href = 'login.html';
             } catch (err) {
                 console.error('Registration error:', err);
                 let errorMessage = 'An error occurred. Please try again.';
-                
+
                 // Handle Firebase auth errors
                 if (err.code === 'auth/email-already-in-use') {
                     errorMessage = 'Email is already registered.';
@@ -319,7 +403,7 @@ function initFormListeners() {
                 } else if (err.code === 'auth/network-request-failed') {
                     errorMessage = 'Network error. Please check your connection.';
                 }
-                
+
                 alert(errorMessage);
                 submitBtn.disabled = false;
                 submitBtn.innerHTML = originalBtnText;
@@ -373,13 +457,13 @@ export async function resetPassword(email) {
     } catch (error) {
         console.error('Password reset error:', error);
         let errorMessage = 'Failed to send password reset email.';
-        
+
         if (error.code === 'auth/user-not-found') {
             errorMessage = 'No account found with this email.';
         } else if (error.code === 'auth/invalid-email') {
             errorMessage = 'Invalid email address.';
         }
-        
+
         alert(errorMessage);
     }
 }

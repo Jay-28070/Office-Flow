@@ -25,21 +25,36 @@
     </div>
 
     <div class="dashboard-container">
+        <!-- Mobile Menu Button -->
+        <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileMenu()">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Mobile Menu Overlay -->
+        <div class="mobile-menu-overlay" id="mobileMenuOverlay" onclick="closeMobileMenu()"></div>
+
         <!-- Sidebar -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="sidebar">
             <div class="logo">
                 <i class="fas fa-building"></i>
                 <span>officeFlow</span>
+                <button class="sidebar-close-btn" onclick="closeMobileMenu()">
+                    ×
+                </button>
             </div>
 
             <nav class="nav-menu">
-                <a href="#" class="nav-item active" onclick="showTab('dashboard', event)">
+                <a href="#" class="nav-item" onclick="showTab('dashboard', event)">
                     <i class="fas fa-home"></i>
                     <span>Dashboard</span>
                 </a>
                 <a href="#" class="nav-item" onclick="showTab('staff', event)">
                     <i class="fas fa-users"></i>
                     <span>Manage Staff</span>
+                </a>
+                <a href="#" class="nav-item" onclick="showTab('unassigned-requests', event)">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>Unassigned Requests</span>
                 </a>
                 <a href="#" class="nav-item" onclick="showTab('settings', event)">
                     <i class="fas fa-cog"></i>
@@ -122,6 +137,50 @@
                 </section>
             </div>
 
+            <!-- Unassigned Requests Tab -->
+            <div id="unassigned-requests-tab" class="tab-content">
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-exclamation-triangle"></i> Unassigned Requests</h2>
+                        <p class="section-description">
+                            These requests were routed to you because no department admin is available to handle them.
+                            Consider promoting staff members to admin roles for better request distribution.
+                        </p>
+                    </div>
+
+                    <!-- Department Status Overview -->
+                    <div class="department-status-grid" id="departmentStatusGrid">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+
+                    <!-- Unassigned Requests List -->
+                    <div class="unassigned-requests-container">
+                        <div class="requests-header">
+                            <h3>Requests Requiring Your Attention</h3>
+                            <div class="requests-filters">
+                                <select id="unassignedCategoryFilter" onchange="filterUnassignedRequests()">
+                                    <option value="">All Categories</option>
+                                    <option value="HR">HR Services</option>
+                                    <option value="IT">IT Support</option>
+                                    <option value="Maintenance">Maintenance</option>
+                                </select>
+                                <select id="unassignedPriorityFilter" onchange="filterUnassignedRequests()">
+                                    <option value="">All Priorities</option>
+                                    <option value="Urgent">Urgent</option>
+                                    <option value="High">High</option>
+                                    <option value="Medium">Medium</option>
+                                    <option value="Low">Low</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="unassigned-requests-list" id="unassignedRequestsList">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </section>
+            </div>
+
             <!-- Staff Tab -->
             <div id="staff-tab" class="tab-content">
                 <section class="dashboard-section">
@@ -187,6 +246,11 @@
                                 </tr>
                             </tbody>
                         </table>
+                    </div>
+
+                    <!-- Mobile Users List (shown on mobile instead of table) -->
+                    <div class="mobile-users-list" id="mobileUsersList">
+                        <!-- Mobile user cards will be populated here -->
                     </div>
 
                     <!-- Pagination -->

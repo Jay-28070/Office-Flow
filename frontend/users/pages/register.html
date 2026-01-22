@@ -165,7 +165,8 @@
                         <label class="checkbox-wrapper">
                             <input type="checkbox" id="agreeTerms" required>
                             <span class="checkmark"></span>
-                            I agree to the <a href="#" class="terms-link">Terms of Service</a>
+                            I agree to the <a href="#" class="terms-link" onclick="openTermsModal(event)">Terms of
+                                Service</a>
                         </label>
                     </div>
 
@@ -185,6 +186,134 @@
                         </a>
                     </p>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms of Service Modal -->
+    <div class="terms-modal-overlay" id="termsModalOverlay" onclick="closeTermsModal()">
+        <div class="terms-modal" onclick="event.stopPropagation()">
+            <div class="terms-modal-header">
+                <h2>Terms of Service</h2>
+                <button class="terms-modal-close" onclick="closeTermsModal()">
+                    ×
+                </button>
+            </div>
+            <div class="terms-modal-content">
+                <div class="terms-content">
+                    <p class="effective-date"><strong>Effective Date:</strong> January 22, 2026</p>
+
+                    <p>These Terms of Service ("Terms") govern the use of the Internal Service Request Application (the
+                        "Application"). The Application is intended for internal use only by authorized users within the
+                        organization.</p>
+
+                    <p>By accessing or using the Application, you agree to be bound by these Terms. If you do not agree,
+                        you must not use the Application.</p>
+
+                    <h3>1. Purpose of the Application</h3>
+                    <p>The Application is designed to allow employees or authorized users to submit, track, and manage
+                        internal service requests (such as IT support, maintenance, or administrative requests).</p>
+                    <p>The Application is not intended for public use or for handling external customer requests.</p>
+
+                    <h3>2. Eligibility and Access</h3>
+                    <ul>
+                        <li>Access is limited to authorized users only.</li>
+                        <li>You must use your assigned credentials and may not share your login details with others.
+                        </li>
+                        <li>You are responsible for all activity that occurs under your account.</li>
+                        <li>The organization reserves the right to suspend or revoke access at any time.</li>
+                    </ul>
+
+                    <h3>3. Acceptable Use</h3>
+                    <p>You agree to use the Application only for legitimate internal business purposes.</p>
+                    <p><strong>You must not:</strong></p>
+                    <ul>
+                        <li>Submit false, misleading, or malicious requests</li>
+                        <li>Attempt to gain unauthorized access to the system or other user accounts</li>
+                        <li>Upload or transmit harmful code, malware, or inappropriate content</li>
+                        <li>Use the Application in a way that disrupts or damages the system or organization</li>
+                    </ul>
+
+                    <h3>4. Data and Privacy</h3>
+                    <ul>
+                        <li>The Application may collect personal and work-related information necessary to process
+                            service requests.</li>
+                        <li>All data is handled in accordance with internal company policies and applicable data
+                            protection laws.</li>
+                        <li>Users should not submit sensitive personal information unless explicitly required.</li>
+                        <li>The organization may monitor and log usage for security, maintenance, and audit purposes.
+                        </li>
+                    </ul>
+
+                    <h3>5. Confidentiality</h3>
+                    <ul>
+                        <li>All information accessed through the Application is considered confidential and must not be
+                            shared with unauthorized parties.</li>
+                        <li>Unauthorized disclosure of internal information may result in disciplinary action.</li>
+                    </ul>
+
+                    <h3>6. Availability and Maintenance</h3>
+                    <ul>
+                        <li>The Application is provided on an "as is" and "as available" basis.</li>
+                        <li>Availability is not guaranteed, and downtime may occur due to maintenance, updates, or
+                            technical issues.</li>
+                        <li>The organization is not liable for delays or losses caused by system unavailability.</li>
+                    </ul>
+
+                    <h3>7. Intellectual Property</h3>
+                    <ul>
+                        <li><strong>OfficeFlow</strong> is the property of <strong>Team CAPS</strong>.</li>
+                        <li>The primary team members responsible for OfficeFlow are:
+                            <ul class="team-list">
+                                <li>Jason Williams</li>
+                                <li>Musa Bolo</li>
+                                <li>Polite Dlamini</li>
+                                <li>Kuhle Mpatheni</li>
+                                <li>Olwethu Madubela</li>
+                            </ul>
+                        </li>
+                        <li>The Application, including its code, design, and content, is the property of Team CAPS.</li>
+                        <li>Users are granted a limited, non-transferable right to use the Application solely for
+                            internal purposes.</li>
+                    </ul>
+
+                    <h3>8. Limitation of Liability</h3>
+                    <p>To the maximum extent permitted by law, the organization is not liable for:</p>
+                    <ul>
+                        <li>Any indirect or consequential damages</li>
+                        <li>Loss of data, productivity, or business interruption arising from use of the Application
+                        </li>
+                    </ul>
+
+                    <h3>9. Termination</h3>
+                    <p>The organization may suspend or terminate access to the Application at any time for:</p>
+                    <ul>
+                        <li>Violation of these Terms</li>
+                        <li>Security concerns</li>
+                        <li>Organizational or operational reasons</li>
+                    </ul>
+                    <p>Upon termination, your right to use the Application immediately ceases.</p>
+
+                    <h3>10. Changes to These Terms</h3>
+                    <ul>
+                        <li>The organization may update these Terms from time to time.</li>
+                        <li>Continued use of the Application after changes are made constitutes acceptance of the
+                            revised Terms.</li>
+                    </ul>
+
+                    <h3>11. Contact</h3>
+                    <p>For questions or concerns regarding these Terms or the Application, contact the system
+                        administrator or relevant internal department.</p>
+
+                    <div class="terms-footer">
+                        <p><strong>By using the Application, you acknowledge that you have read, understood, and agreed
+                                to these Terms of Service.</strong></p>
+                    </div>
+                </div>
+            </div>
+            <div class="terms-modal-actions">
+                <button class="btn-secondary" onclick="closeTermsModal()">Close</button>
+                <button class="btn-primary" onclick="acceptTerms()">I Accept</button>
             </div>
         </div>
     </div>

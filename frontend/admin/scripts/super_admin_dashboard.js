@@ -84,14 +84,48 @@ async function loadData() {
 }
 
 async function loadCompanySettings() {
-    const response = await fetch('http://localhost:3000/api/company/settings', {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-    });
-    const data = await response.json();
-    if (data.success) {
-        companySettings = data.company.settings;
-        // Load departments list
-        loadDepartmentsList(data.company.settings.departments || []);
+    try {
+        console.log('Loading company settings...');
+        const response = await fetch('http://localhost:3000/api/company/settings', {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+
+        console.log('Company settings response status:', response.status);
+
+        if (!response.ok) {
+            console.error('Failed to load company settings:', response.status);
+            return;
+        }
+
+        const data = await response.json();
+        console.log('Company settings loaded:', data);
+
+        if (data.success) {
+            companySettings = data.company.settings;
+            // Load departments list
+            loadDepartmentsList(data.company.settings.departments || []);
+
+            // Update UI elements directly here as well
+            console.log('Updating UI elements...');
+            const companyNameEl = document.getElementById('companyName');
+            const companyCodeEl = document.getElementById('companyCode');
+
+            console.log('Company name element:', companyNameEl);
+            console.log('Company code element:', companyCodeEl);
+
+            if (companyNameEl) {
+                companyNameEl.textContent = data.company.name;
+                console.log('Set company name to:', data.company.name);
+            }
+            if (companyCodeEl) {
+                companyCodeEl.textContent = data.company.companyCode;
+                console.log('Set company code to:', data.company.companyCode);
+            }
+        } else {
+            console.error('Company settings API returned success: false');
+        }
+    } catch (error) {
+        console.error('Error loading company settings:', error);
     }
 }
 
@@ -132,6 +166,155 @@ async function refreshUserList() {
             refreshBtn.disabled = false;
         }
     }
+}
+
+// Mobile menu functions
+function toggleMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    const menuBtn = document.getElementById('mobileMenuBtn');
+
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('show');
+
+    if (sidebar.classList.contains('open')) {
+        menuBtn.style.opacity = '0';
+        menuBtn.style.visibility = 'hidden';
+        document.body.style.overflow = 'hidden';
+    } else {
+        menuBtn.style.opacity = '1';
+        menuBtn.style.visibility = 'visible';
+        document.body.style.overflow = '';
+    }
+}
+
+function closeMobileMenu() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('mobileMenuOverlay');
+    const menuBtn = document.getElementById('mobileMenuBtn');
+
+    sidebar.classList.remove('open');
+    overlay.classList.remove('show');
+    menuBtn.style.opacity = '1';
+    menuBtn.style.visibility = 'visible';
+    document.body.style.overflow = '';
+}
+
+// Update the existing displayUsers function to also populate mobile list
+function displayUsers() {
+    const tbody = document.getElementById('usersTableBody');
+    const mobileList = document.getElementById('mobileUsersList');
+    const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+
+    // Group paginated users by department
+    const paginatedByDept = {};
+    filteredUsers.forEach(user => {
+        const dept = user.department || 'Unassigned';
+        if (!paginatedByDept[dept]) {
+            paginatedByDept[dept] = [];
+        }
+        paginatedByDept[dept].push(user);
+    });
+
+    // Sort each department
+    Object.keys(paginatedByDept).forEach(dept => {
+        paginatedByDept[dept].sort((a, b) => {
+            if (a.role === 'admin' && b.role !== 'admin') return -1;
+            if (a.role !== 'admin' && b.role === 'admin') return 1;
+            return a.fullName.localeCompare(b.fullName);
+        });
+    });
+
+    // Sort departments
+    const paginatedDepts = Object.keys(paginatedByDept).sort((a, b) => {
+        if (a === 'Unassigned') return 1;
+        if (b === 'Unassigned') return -1;
+        return a.localeCompare(b);
+    });
+
+    // Build desktop table HTML
+    let tableHtml = '';
+    paginatedDepts.forEach(dept => {
+        tableHtml += `
+            <tr class="department-header">
+                <td colspan="7">
+                    <strong><i class="fas fa-building"></i> ${dept}</strong>
+                    <span class="badge">${paginatedByDept[dept].length} members</span>
+                </td>
+            </tr>
+        `;
+
+        paginatedByDept[dept].forEach(user => {
+            tableHtml += `
+                <tr>
+                    <td>
+                        <input type="checkbox" class="user-checkbox" value="${user.id}" onchange="updateBulkActions()">
+                    </td>
+                    <td>${user.fullName}</td>
+                    <td>${user.email}</td>
+                    <td><span class="role-badge role-${user.role}">${user.role}</span></td>
+                    <td>${user.department || '-'}</td>
+                    <td>${user.jobTitle || '-'}</td>
+                    <td>
+                        ${user.role === 'admin' ? `
+                            <button class="btn-small btn-warning" onclick="demoteAdmin('${user.id}')" title="Remove Admin">
+                                <i class="fas fa-user-minus"></i>
+                            </button>
+                        ` : ''}
+                        <button class="btn-small btn-danger" onclick="deleteUser('${user.id}')" title="Delete User">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    });
+
+    tbody.innerHTML = tableHtml || '<tr><td colspan="7" style="text-align: center; padding: 2rem; color: #6b7280;">No staff members found</td></tr>';
+
+    // Build mobile list HTML
+    let mobileHtml = '';
+    paginatedDepts.forEach(dept => {
+        mobileHtml += `
+            <div class="mobile-department-header">
+                <h3><i class="fas fa-building"></i> ${dept}</h3>
+                <span class="badge">${paginatedByDept[dept].length} members</span>
+            </div>
+        `;
+
+        paginatedByDept[dept].forEach(user => {
+            mobileHtml += `
+                <div class="mobile-user-card">
+                    <div class="mobile-user-header">
+                        <div class="mobile-user-info">
+                            <h3>${user.fullName}</h3>
+                            <p>${user.email}</p>
+                            <p><span class="role-badge role-${user.role}">${user.role}</span> • ${user.department || 'No Department'}</p>
+                            <p><strong>Job Title:</strong> ${user.jobTitle || 'Not specified'}</p>
+                        </div>
+                        <input type="checkbox" class="user-checkbox" value="${user.id}" onchange="updateBulkActions()">
+                    </div>
+                    <div class="mobile-user-actions">
+                        ${user.role === 'admin' ? `
+                            <button class="btn-secondary" onclick="demoteAdmin('${user.id}')">
+                                <i class="fas fa-user-minus"></i> Remove Admin
+                            </button>
+                        ` : ''}
+                        <button class="btn-danger" onclick="deleteUser('${user.id}')">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+    });
+
+    if (mobileList) {
+        mobileList.innerHTML = mobileHtml || '<div style="text-align: center; padding: 2rem; color: #6b7280;">No staff members found</div>';
+    }
+
+    // Update pagination
+    updatePagination(Math.ceil(filteredUsers.length / itemsPerPage));
 }
 
 async function loadAdminRequests() {
@@ -575,18 +758,41 @@ function showTab(tabName, event) {
 }
 
 async function loadCompanyInfo() {
-    const response = await fetch('http://localhost:3000/api/company/settings', {
-        headers: { 'Authorization': `Bearer ${getToken()}` }
-    });
-    const data = await response.json();
-    if (data.success) {
-        document.getElementById('companyName').textContent = data.company.name;
-        document.getElementById('companyCode').textContent = data.company.companyCode;
-        document.getElementById('annualLeave').value = data.company.settings.annualLeaveBalance;
-        document.getElementById('sickLeave').value = data.company.settings.sickLeaveBalance;
+    try {
+        console.log('Loading company info...');
+        const response = await fetch('http://localhost:3000/api/company/settings', {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
 
-        // Load departments list
-        loadDepartmentsList(data.company.settings.departments || []);
+        console.log('Company settings response status:', response.status);
+
+        if (!response.ok) {
+            console.error('Failed to load company settings:', response.status, response.statusText);
+            return;
+        }
+
+        const data = await response.json();
+        console.log('Company settings data:', data);
+
+        if (data.success) {
+            const companyNameEl = document.getElementById('companyName');
+            const companyCodeEl = document.getElementById('companyCode');
+            const annualLeaveEl = document.getElementById('annualLeave');
+            const sickLeaveEl = document.getElementById('sickLeave');
+
+            if (companyNameEl) companyNameEl.textContent = data.company.name;
+            if (companyCodeEl) companyCodeEl.textContent = data.company.companyCode;
+            if (annualLeaveEl) annualLeaveEl.value = data.company.settings.annualLeaveBalance;
+            if (sickLeaveEl) sickLeaveEl.value = data.company.settings.sickLeaveBalance;
+
+            // Load departments list
+            loadDepartmentsList(data.company.settings.departments || []);
+            console.log('Company info loaded successfully');
+        } else {
+            console.error('Company settings API returned success: false');
+        }
+    } catch (error) {
+        console.error('Error loading company info:', error);
     }
 }
 
@@ -826,7 +1032,8 @@ document.querySelectorAll('input[name="profile-colorScheme"]').forEach(radio => 
 
 // Load saved theme
 const savedTheme = localStorage.getItem('theme') || 'light';
-document.querySelector(`input[name="theme"][value="${savedTheme}"]`).checked = true;
+const themeRadio = document.querySelector(`input[name="theme"][value="${savedTheme}"]`);
+if (themeRadio) themeRadio.checked = true;
 if (savedTheme === 'dark') {
     document.body.classList.add('dark-mode');
 }
@@ -969,6 +1176,796 @@ async function bulkRemoveAdmins() {
         await demoteAdmin(userId);
     }
 
-    document.getElementById('selectAll').checked = false;
+    const selectAllCheckbox = document.getElementById('selectAll');
+    if (selectAllCheckbox) selectAllCheckbox.checked = false;
     updateBulkActions();
 }
+// ===== UNASSIGNED REQUESTS FUNCTIONALITY =====
+
+let unassignedRequests = [];
+let filteredUnassignedRequests = [];
+
+// Debug function to test the API
+async function debugUnassignedRequests() {
+    try {
+        const token = localStorage.getItem('authToken');
+
+        console.log('=== DEBUG: Testing unassigned requests API ===');
+
+        // Test the debug endpoint first
+        const debugResponse = await fetch('http://localhost:3000/api/debug/requests', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (debugResponse.ok) {
+            const debugData = await debugResponse.json();
+            console.log('All requests in system:', debugData);
+        }
+
+        // Test the unassigned endpoint
+        const unassignedResponse = await fetch('http://localhost:3000/api/requests/unassigned', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (unassignedResponse.ok) {
+            const unassignedData = await unassignedResponse.json();
+            console.log('Unassigned requests:', unassignedData);
+        } else {
+            console.error('Unassigned requests failed:', unassignedResponse.status);
+        }
+
+    } catch (error) {
+        console.error('Debug error:', error);
+    }
+}
+
+// Debug function to create a test request
+async function createTestRequest() {
+    try {
+        const token = localStorage.getItem('authToken');
+
+        console.log('=== Creating test request ===');
+
+        const response = await fetch('http://localhost:3000/api/debug/create-test-request', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Test request created:', data);
+            alert('Test request created! Check the Unassigned Requests tab.');
+
+            // Refresh the unassigned requests list
+            await loadUnassignedRequests();
+        } else {
+            console.error('Failed to create test request:', response.status);
+        }
+
+    } catch (error) {
+        console.error('Error creating test request:', error);
+    }
+}
+
+// Make debug functions available globally
+window.debugUnassignedRequests = debugUnassignedRequests;
+window.createTestRequest = createTestRequest;
+
+/**
+ * Load unassigned requests tab
+ */
+async function loadUnassignedRequests() {
+    showUnassignedRequestsLoading();
+
+    try {
+        await Promise.all([
+            loadDepartmentStatus(),
+            loadUnassignedRequestsList()
+        ]);
+    } catch (error) {
+        console.error('Error loading unassigned requests:', error);
+        showMessage('Failed to load unassigned requests', 'error');
+    }
+}
+
+/**
+ * Load department status overview
+ */
+async function loadDepartmentStatus() {
+    try {
+        const token = localStorage.getItem('authToken');
+
+        // Get company settings to see all departments
+        const settingsResponse = await fetch('http://localhost:3000/api/company/settings', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!settingsResponse.ok) return;
+
+        const settingsData = await settingsResponse.json();
+        const departments = settingsData.company.settings.departments || [];
+
+        // Get all users to check which departments have admins
+        const usersResponse = await fetch('http://localhost:3000/api/company/users', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!usersResponse.ok) return;
+
+        const usersData = await usersResponse.json();
+        const users = usersData.users || [];
+
+        // Get unassigned requests count per department
+        const requestsResponse = await fetch('http://localhost:3000/api/requests/unassigned', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        let requestsByDepartment = {};
+        if (requestsResponse.ok) {
+            const requestsData = await requestsResponse.json();
+            const unassignedRequests = requestsData.requests || [];
+
+            requestsByDepartment = unassignedRequests.reduce((acc, req) => {
+                const dept = getDepartmentFromCategory(req.category);
+                acc[dept] = (acc[dept] || 0) + 1;
+                return acc;
+            }, {});
+        }
+
+        renderDepartmentStatus(departments, users, requestsByDepartment);
+    } catch (error) {
+        console.error('Error loading department status:', error);
+    }
+}
+
+/**
+ * Map request category to department
+ */
+function getDepartmentFromCategory(category) {
+    const categoryToDepartment = {
+        'HR': 'HR',
+        'IT': 'IT',
+        'Maintenance': 'Maintenance'
+    };
+    return categoryToDepartment[category] || 'General';
+}
+
+/**
+ * Render department status cards
+ */
+function renderDepartmentStatus(departments, users, requestsByDepartment) {
+    const container = document.getElementById('departmentStatusGrid');
+    if (!container) return;
+
+    const departmentCards = departments.map(dept => {
+        const admin = users.find(user => user.role === 'admin' && user.department === dept);
+        const requestCount = requestsByDepartment[dept] || 0;
+        const hasAdmin = !!admin;
+
+        return `
+            <div class="department-status-card ${hasAdmin ? 'has-admin' : 'no-admin'}">
+                <div class="department-status-header">
+                    <div class="department-name">${dept}</div>
+                    <div class="department-status-badge ${hasAdmin ? 'has-admin' : 'no-admin'}">
+                        ${hasAdmin ? 'Has Admin' : 'No Admin'}
+                    </div>
+                </div>
+                
+                ${hasAdmin ? `
+                    <div class="department-admin-info">
+                        <i class="fas fa-user-shield"></i> ${admin.fullName}
+                    </div>
+                ` : `
+                    <div class="department-admin-info">
+                        <i class="fas fa-exclamation-triangle"></i> No admin assigned
+                    </div>
+                `}
+                
+                <div class="department-request-count">
+                    <i class="fas fa-inbox"></i>
+                    <span>${requestCount} unassigned request${requestCount !== 1 ? 's' : ''}</span>
+                </div>
+                
+                ${!hasAdmin ? `
+                    <button class="promote-admin-btn" onclick="showCreateAdminModal('${dept}')">
+                        <i class="fas fa-user-plus"></i> Promote Staff to Admin
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = departmentCards;
+}
+
+/**
+ * Load unassigned requests list
+ */
+/**
+ * Approve unassigned request
+ */
+async function approveUnassignedRequest(requestId) {
+    if (!confirm('Are you sure you want to approve this request?')) return;
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`http://localhost:3000/api/requests/${requestId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ status: 'Completed' })
+        });
+
+        if (response.ok) {
+            showMessage('Request approved successfully', 'success');
+            await loadUnassignedRequests(); // Refresh the list
+        } else {
+            throw new Error('Failed to approve request');
+        }
+    } catch (error) {
+        console.error('Error approving request:', error);
+        showMessage('Failed to approve request', 'error');
+    }
+}
+
+/**
+ * Reject unassigned request
+ */
+async function rejectUnassignedRequest(requestId) {
+    const reason = prompt('Please provide a reason for rejection (optional):');
+    if (reason === null) return; // User cancelled
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`http://localhost:3000/api/requests/${requestId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                status: 'Rejected',
+                comments: reason || 'No reason provided'
+            })
+        });
+
+        if (response.ok) {
+            showMessage('Request rejected successfully', 'success');
+            await loadUnassignedRequests(); // Refresh the list
+        } else {
+            throw new Error('Failed to reject request');
+        }
+    } catch (error) {
+        console.error('Error rejecting request:', error);
+        showMessage('Failed to reject request', 'error');
+    }
+}
+
+/**
+ * View request details (placeholder for future modal)
+ */
+function viewRequestDetails(requestId) {
+    const request = unassignedRequests.find(r => r.id === requestId);
+    if (request) {
+        alert(`Request Details:\n\nTitle: ${request.title}\nCategory: ${request.category}\nPriority: ${request.priority}\nSubmitted by: ${request.userName}\nDescription: ${request.description}`);
+    }
+}
+
+/**
+ * Show create admin modal with pre-selected department
+ */
+function showCreateAdminModal(department) {
+    // Set the department in the modal
+    const departmentSelect = document.getElementById('adminDepartment');
+    if (departmentSelect) {
+        departmentSelect.value = department;
+    }
+
+    // Show the existing create admin modal
+    const modal = document.getElementById('createAdminModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}// 
+//===== TAB NAVIGATION =====
+
+/**
+ * Show selected tab and load its content
+ */
+function showTab(tabName, event) {
+    if (event) {
+        event.preventDefault();
+    }
+
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => {
+        content.classList.remove('active');
+    });
+
+    // Remove active class from all nav items
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // Show selected tab content
+    const selectedTab = document.getElementById(`${tabName}-tab`);
+    if (selectedTab) {
+        selectedTab.classList.add('active');
+    }
+
+    // Add active class to clicked nav item
+    if (event && event.target) {
+        const clickedItem = event.target.closest('.nav-item');
+        if (clickedItem) {
+            clickedItem.classList.add('active');
+        }
+    }
+
+    // Load tab-specific content
+    switch (tabName) {
+        case 'dashboard':
+            loadAdminRequests();
+            break;
+        case 'staff':
+            refreshUserList();
+            break;
+        case 'unassigned-requests':
+            loadUnassignedRequests();
+            break;
+        case 'settings':
+            loadCompanySettings();
+            break;
+    }
+}
+
+// Make showTab globally available
+window.showTab = showTab;
+
+// ===== USER MANAGEMENT =====
+
+/**
+ * Get current user information
+ */
+function getCurrentUser() {
+    try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        return user;
+    } catch (error) {
+        console.error('Error getting current user:', error);
+        return {};
+    }
+}
+
+// ===== LOADING STATES =====
+
+/**
+ * Show loading state for unassigned requests
+ */
+function showUnassignedRequestsLoading() {
+    const container = document.getElementById('unassignedRequestsList');
+    if (container) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 3rem; color: var(--gray-500);">
+                <div class="loading-spinner" style="margin: 0 auto 1rem; width: 40px; height: 40px;"></div>
+                <p>Loading unassigned requests...</p>
+            </div>
+        `;
+    }
+
+    const statusGrid = document.getElementById('departmentStatusGrid');
+    if (statusGrid) {
+        statusGrid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 2rem; color: var(--gray-500);">
+                <div class="loading-spinner" style="margin: 0 auto 1rem; width: 30px; height: 30px;"></div>
+                <p>Loading department status...</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Show message in requests container
+ */
+function showMessage(message, type = 'info') {
+    // Create or update message element
+    let messageEl = document.querySelector('.dashboard-message');
+    if (!messageEl) {
+        messageEl = document.createElement('div');
+        messageEl.className = 'dashboard-message';
+        messageEl.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease;
+        `;
+        document.body.appendChild(messageEl);
+    }
+
+    messageEl.textContent = message;
+    messageEl.style.background = type === 'error' ? '#ef4444' : type === 'success' ? '#10b981' : '#3b82f6';
+
+    // Auto remove after 3 seconds
+    setTimeout(() => {
+        if (messageEl.parentNode) {
+            messageEl.remove();
+        }
+    }, 3000);
+}
+
+// ===== UNASSIGNED REQUESTS FUNCTIONALITY =====
+
+/**
+ * Load unassigned requests tab
+ */
+async function loadUnassignedRequests() {
+    showUnassignedRequestsLoading();
+
+    try {
+        await Promise.all([
+            loadDepartmentStatus(),
+            loadUnassignedRequestsList()
+        ]);
+    } catch (error) {
+        console.error('Error loading unassigned requests:', error);
+        showMessage('Failed to load unassigned requests', 'error');
+    }
+}
+
+/**
+ * Load department status overview
+ */
+async function loadDepartmentStatus() {
+    try {
+        const token = localStorage.getItem('authToken');
+
+        // Get company settings to see all departments
+        const settingsResponse = await fetch('http://localhost:3000/api/company/settings', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!settingsResponse.ok) return;
+
+        const settingsData = await settingsResponse.json();
+        const departments = settingsData.company.settings.departments || [];
+
+        // Get all users to check which departments have admins
+        const usersResponse = await fetch('http://localhost:3000/api/company/users', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!usersResponse.ok) return;
+
+        const usersData = await usersResponse.json();
+        const users = usersData.users || [];
+
+        // Get unassigned requests count per department
+        const requestsResponse = await fetch('http://localhost:3000/api/requests/unassigned', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        let requestsByDepartment = {};
+        if (requestsResponse.ok) {
+            const requestsData = await requestsResponse.json();
+            const unassignedRequests = requestsData.requests || [];
+
+            requestsByDepartment = unassignedRequests.reduce((acc, req) => {
+                const dept = getDepartmentFromCategory(req.category);
+                acc[dept] = (acc[dept] || 0) + 1;
+                return acc;
+            }, {});
+        }
+
+        renderDepartmentStatus(departments, users, requestsByDepartment);
+    } catch (error) {
+        console.error('Error loading department status:', error);
+    }
+}
+
+/**
+ * Map request category to department
+ */
+function getDepartmentFromCategory(category) {
+    const categoryToDepartment = {
+        'HR': 'HR',
+        'IT': 'IT',
+        'Maintenance': 'Maintenance'
+    };
+    return categoryToDepartment[category] || 'General';
+}
+
+/**
+ * Render department status cards
+ */
+function renderDepartmentStatus(departments, users, requestsByDepartment) {
+    const container = document.getElementById('departmentStatusGrid');
+    if (!container) return;
+
+    const departmentCards = departments.map(dept => {
+        const admin = users.find(user => user.role === 'admin' && user.department === dept);
+        const requestCount = requestsByDepartment[dept] || 0;
+        const hasAdmin = !!admin;
+
+        return `
+            <div class="department-status-card ${hasAdmin ? 'has-admin' : 'no-admin'}">
+                <div class="department-status-header">
+                    <div class="department-name">${dept}</div>
+                    <div class="department-status-badge ${hasAdmin ? 'has-admin' : 'no-admin'}">
+                        ${hasAdmin ? 'Has Admin' : 'No Admin'}
+                    </div>
+                </div>
+                
+                ${hasAdmin ? `
+                    <div class="department-admin-info">
+                        <i class="fas fa-user-shield"></i> ${admin.fullName}
+                    </div>
+                ` : `
+                    <div class="department-admin-info">
+                        <i class="fas fa-exclamation-triangle"></i> No admin assigned
+                    </div>
+                `}
+                
+                <div class="department-request-count">
+                    <i class="fas fa-inbox"></i>
+                    <span>${requestCount} unassigned request${requestCount !== 1 ? 's' : ''}</span>
+                </div>
+                
+                ${!hasAdmin ? `
+                    <button class="promote-admin-btn" onclick="showCreateAdminModal('${dept}')">
+                        <i class="fas fa-user-plus"></i> Promote Staff to Admin
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = departmentCards;
+}
+
+/**
+ * Load unassigned requests list
+ */
+async function loadUnassignedRequestsList() {
+    try {
+        // Initialize arrays to prevent reference errors
+        unassignedRequests = [];
+        filteredUnassignedRequests = [];
+
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('http://localhost:3000/api/requests/unassigned', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            console.error('Failed to fetch unassigned requests:', response.status);
+            renderUnassignedRequests(); // Render empty state
+            return;
+        }
+
+        const data = await response.json();
+        console.log('Unassigned requests response:', data);
+
+        unassignedRequests = data.requests || [];
+        filteredUnassignedRequests = [...unassignedRequests];
+        renderUnassignedRequests();
+    } catch (error) {
+        console.error('Error loading unassigned requests:', error);
+        // Ensure arrays are initialized even on error
+        unassignedRequests = [];
+        filteredUnassignedRequests = [];
+        renderUnassignedRequests(); // Render empty state
+    }
+}
+
+/**
+ * Render unassigned requests list
+ */
+function renderUnassignedRequests() {
+    const container = document.getElementById('unassignedRequestsList');
+    if (!container) return;
+
+    // Ensure array is initialized
+    if (!filteredUnassignedRequests) filteredUnassignedRequests = [];
+
+    if (filteredUnassignedRequests.length === 0) {
+        container.innerHTML = `
+            <div class="empty-unassigned-requests">
+                <i class="fas fa-check-circle"></i>
+                <h3>All Requests Are Properly Assigned!</h3>
+                <p>Great job! All departments have admins to handle their requests.</p>
+            </div>
+        `;
+        return;
+    }
+
+    const requestsHtml = filteredUnassignedRequests.map(request => {
+        const department = getDepartmentFromCategory(request.category);
+        const submittedDate = new Date(request.dateSubmitted?.seconds * 1000 || Date.now()).toLocaleDateString();
+
+        return `
+            <div class="unassigned-request-item">
+                <div class="request-info">
+                    <div class="request-title">${request.title}</div>
+                    <div class="request-meta">
+                        <span class="request-category">
+                            <i class="fas fa-tag"></i> ${request.category}
+                        </span>
+                        <span class="request-priority ${request.priority.toLowerCase()}">
+                            ${request.priority}
+                        </span>
+                        <span class="request-submitter">
+                            <i class="fas fa-user"></i> ${request.userName} • ${submittedDate}
+                        </span>
+                    </div>
+                    <div class="request-description">${request.description}</div>
+                    <div class="request-routing-reason">
+                        <i class="fas fa-info-circle"></i>
+                        Routed to you because no ${department} department admin is available
+                    </div>
+                </div>
+                <div class="request-actions">
+                    <button class="request-action-btn view" onclick="viewRequestDetails('${request.id}')">
+                        <i class="fas fa-eye"></i> View
+                    </button>
+                    <button class="request-action-btn approve" onclick="approveUnassignedRequest('${request.id}')">
+                        <i class="fas fa-check"></i> Approve
+                    </button>
+                    <button class="request-action-btn reject" onclick="rejectUnassignedRequest('${request.id}')">
+                        <i class="fas fa-times"></i> Reject
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = requestsHtml;
+}
+
+/**
+ * Filter unassigned requests
+ */
+function filterUnassignedRequests() {
+    const categoryFilter = document.getElementById('unassignedCategoryFilter');
+    const priorityFilter = document.getElementById('unassignedPriorityFilter');
+
+    const categoryValue = categoryFilter ? categoryFilter.value : '';
+    const priorityValue = priorityFilter ? priorityFilter.value : '';
+
+    // Ensure arrays are initialized
+    if (!unassignedRequests) unassignedRequests = [];
+
+    filteredUnassignedRequests = unassignedRequests.filter(request => {
+        const matchesCategory = !categoryValue || request.category === categoryValue;
+        const matchesPriority = !priorityValue || request.priority === priorityValue;
+        return matchesCategory && matchesPriority;
+    });
+
+    renderUnassignedRequests();
+}
+
+/**
+ * Approve unassigned request
+ */
+async function approveUnassignedRequest(requestId) {
+    if (!confirm('Are you sure you want to approve this request?')) return;
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`http://localhost:3000/api/requests/${requestId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ status: 'Completed' })
+        });
+
+        if (response.ok) {
+            showMessage('Request approved successfully', 'success');
+            await loadUnassignedRequests(); // Refresh the list
+        } else {
+            throw new Error('Failed to approve request');
+        }
+    } catch (error) {
+        console.error('Error approving request:', error);
+        showMessage('Failed to approve request', 'error');
+    }
+}
+
+/**
+ * Reject unassigned request
+ */
+async function rejectUnassignedRequest(requestId) {
+    const reason = prompt('Please provide a reason for rejection (optional):');
+    if (reason === null) return; // User cancelled
+
+    try {
+        const token = localStorage.getItem('authToken');
+        const response = await fetch(`http://localhost:3000/api/requests/${requestId}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                status: 'Rejected',
+                comments: reason || 'No reason provided'
+            })
+        });
+
+        if (response.ok) {
+            showMessage('Request rejected successfully', 'success');
+            await loadUnassignedRequests(); // Refresh the list
+        } else {
+            throw new Error('Failed to reject request');
+        }
+    } catch (error) {
+        console.error('Error rejecting request:', error);
+        showMessage('Failed to reject request', 'error');
+    }
+}
+
+/**
+ * View request details (placeholder for future modal)
+ */
+function viewRequestDetails(requestId) {
+    const request = unassignedRequests.find(r => r.id === requestId);
+    if (request) {
+        alert(`Request Details:\n\nTitle: ${request.title}\nCategory: ${request.category}\nPriority: ${request.priority}\nSubmitted by: ${request.userName}\nDescription: ${request.description}`);
+    }
+}
+
+/**
+ * Show create admin modal with pre-selected department
+ */
+function showCreateAdminModal(department) {
+    // Set the department in the modal
+    const departmentSelect = document.getElementById('adminDepartment');
+    if (departmentSelect) {
+        departmentSelect.value = department;
+    }
+
+    // Show the existing create admin modal
+    const modal = document.getElementById('createAdminModal');
+    if (modal) {
+        modal.style.display = 'flex';
+    }
+}
+
+// Make functions globally available
+window.filterUnassignedRequests = filterUnassignedRequests;
+window.approveUnassignedRequest = approveUnassignedRequest;
+window.rejectUnassignedRequest = rejectUnassignedRequest;
+window.viewRequestDetails = viewRequestDetails;
+window.showCreateAdminModal = showCreateAdminModal;
+
+// ===== INITIALIZATION =====
+
+/**
+ * Initialize super admin dashboard
+ */
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('Super Admin Dashboard Initializing...');
+
+    // Check authentication first
+    if (!checkAuth()) return;
+
+    // Load initial data
+    loadData();
+
+    // Load the default dashboard tab
+    showTab('dashboard');
+
+    console.log('Super Admin Dashboard ready');
+});

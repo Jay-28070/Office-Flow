@@ -128,22 +128,43 @@
 
                 <!-- Stats Cards -->
                 <div class="stats-grid">
-                    <div class="stat-card">
+                    <div class="stat-card clickable-card" onclick="showRequestsPopup('Pending')"
+                        title="Click to view pending requests">
                         <div class="stat-icon">
                             <i class="fas fa-clock"></i>
                         </div>
                         <div class="stat-info">
-                            <span class="stat-number" id="pendingCount">3</span>
+                            <span class="stat-number" id="pendingCount">0</span>
                             <span class="stat-label">Pending Requests</span>
                         </div>
+                        <div class="card-click-hint">
+                            <i class="fas fa-eye"></i>
+                        </div>
                     </div>
-                    <div class="stat-card">
+                    <div class="stat-card clickable-card" onclick="showRequestsPopup('Completed')"
+                        title="Click to view completed requests">
                         <div class="stat-icon">
                             <i class="fas fa-check-circle"></i>
                         </div>
                         <div class="stat-info">
-                            <span class="stat-number" id="completedCount">12</span>
+                            <span class="stat-number" id="completedCount">0</span>
                             <span class="stat-label">Completed</span>
+                        </div>
+                        <div class="card-click-hint">
+                            <i class="fas fa-eye"></i>
+                        </div>
+                    </div>
+                    <div class="stat-card clickable-card" onclick="showRequestsPopup('Rejected')"
+                        title="Click to view rejected requests">
+                        <div class="stat-icon">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <span class="stat-number" id="rejectedCount">0</span>
+                            <span class="stat-label">Rejected</span>
+                        </div>
+                        <div class="card-click-hint">
+                            <i class="fas fa-eye"></i>
                         </div>
                     </div>
                     <div class="stat-card">
@@ -151,17 +172,8 @@
                             <i class="fas fa-calendar-alt"></i>
                         </div>
                         <div class="stat-info">
-                            <span class="stat-number" id="leaveBalance">15</span>
+                            <span class="stat-number" id="leaveBalance">0</span>
                             <span class="stat-label">Leave Days Left</span>
-                        </div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-icon">
-                            <i class="fas fa-chart-line"></i>
-                        </div>
-                        <div class="stat-info">
-                            <span class="stat-number" id="thisMonth">5</span>
-                            <span class="stat-label">This Month</span>
                         </div>
                     </div>
                 </div>
@@ -254,12 +266,15 @@
                                         id="leaveDays">0</span></div>
                                 <label style="margin-left:auto;display:flex;align-items:center;gap:0.4rem;">
                                     <input type="checkbox" id="deductFromBalance" checked>
-                                    Deduct from balance
+                                    Deduct when approved
                                 </label>
                             </div>
                             <div id="leaveBalanceHint"
-                                style="margin-top:0.5rem;font-size:0.85rem;color:var(--gray-600);">Available: <span
-                                    id="availableLeave">--</span></div>
+                                style="margin-top:0.5rem;font-size:0.85rem;color:var(--gray-600);">
+                                Available: <span id="availableLeave">--</span><br>
+                                <small style="color:var(--gray-500);">Note: Leave balance will only be deducted if your
+                                    request is approved by an admin.</small>
+                            </div>
                         </div>
 
                         <div class="form-actions">
@@ -414,7 +429,7 @@
                             <i class="fas fa-calendar-check"></i>
                             Leave Balance
                         </h3>
-                        <span class="balance-year">2024</span>
+                        <span class="balance-year">2026</span>
                     </div>
                     <div class="balance-grid">
                         <div class="balance-item">
@@ -452,20 +467,10 @@
                         <div class="service-icon">
                             <i class="fas fa-file-alt"></i>
                         </div>
-                        <h3 class="service-title">Documents</h3>
+                        <h3 class="service-title">Request Documents</h3>
                         <p class="service-description">Request certificates, letters, or HR documents</p>
                         <button class="service-btn" data-category="HR" data-type="Documents">
                             Request Document
-                        </button>
-                    </div>
-                    <div class="service-card">
-                        <div class="service-icon">
-                            <i class="fas fa-user-edit"></i>
-                        </div>
-                        <h3 class="service-title">Profile Update</h3>
-                        <p class="service-description">Update personal information or contact details</p>
-                        <button class="service-btn" data-category="HR" data-type="Profile">
-                            Update Profile
                         </button>
                     </div>
                 </div>
@@ -1009,9 +1014,16 @@
     </div>
 
     <script type="module">
-        import { startRoleMonitoring } from '../scripts/roleMonitor.js';
-        // Start monitoring role changes when dashboard loads
-        startRoleMonitoring();
+        // Optional role monitoring - don't block dashboard loading
+        try {
+            import('./scripts/roleMonitor.js').then(module => {
+                module.startRoleMonitoring();
+            }).catch(error => {
+                console.warn('Role monitoring not available:', error);
+            });
+        } catch (error) {
+            console.warn('Role monitoring failed to load:', error);
+        }
     </script>
     <script src="../scripts/dashboard.js"></script>
 </body>

@@ -340,11 +340,48 @@
     align-items: center;
     gap: 1rem;
     transition: var(--transition-normal);
+    position: relative;
 }
 
 .stat-card:hover {
     transform: translateY(-5px);
     box-shadow: var(--shadow-lg);
+}
+
+.clickable-card {
+    cursor: pointer;
+    position: relative;
+}
+
+.clickable-card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-500);
+}
+
+.clickable-card:active {
+    transform: translateY(-2px);
+}
+
+.card-click-hint {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 1.5rem;
+    height: 1.5rem;
+    background: var(--primary-500);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 0.75rem;
+    opacity: 0;
+    transition: var(--transition-normal);
+}
+
+.clickable-card:hover .card-click-hint {
+    opacity: 1;
 }
 
 .stat-icon {
@@ -375,6 +412,196 @@
     color: var(--gray-600);
     font-size: 0.875rem;
     font-weight: 500;
+}
+
+/* ===== REQUESTS POPUP MODAL ===== */
+.requests-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.requests-modal-content {
+    background: white;
+    border-radius: 12px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+    animation: slideIn 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+}
+
+.requests-modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--gray-50);
+}
+
+.requests-modal-header h3 {
+    margin: 0;
+    color: #1f2937;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.requests-modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: #6b7280;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.requests-modal-close:hover {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.requests-modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.requests-modal-footer {
+    padding: 1.5rem;
+    border-top: 1px solid #e5e7eb;
+    text-align: center;
+    background: var(--gray-50);
+}
+
+.modal-request-item {
+    display: flex;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px solid #e5e7eb;
+    background: white;
+    transition: all 0.2s;
+}
+
+.modal-request-item:hover {
+    border-color: var(--primary-300);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.modal-request-icon {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+}
+
+.modal-request-icon.pending {
+    background: #f59e0b;
+}
+
+.modal-request-icon.completed {
+    background: #10b981;
+}
+
+.modal-request-icon.rejected {
+    background: #ef4444;
+}
+
+.modal-request-content {
+    flex: 1;
+}
+
+.modal-request-title {
+    margin: 0 0 0.25rem 0;
+    color: #1f2937;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.modal-request-meta {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.modal-request-description {
+    margin: 0;
+    color: #4b5563;
+    font-size: 0.875rem;
+    line-height: 1.4;
+}
+
+.modal-empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6b7280;
+}
+
+.modal-empty-state i {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    display: block;
+    opacity: 0.5;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
 }
 
 /* ===== RECENT ACTIVITY ===== */

@@ -476,3 +476,72 @@ document.addEventListener('DOMContentLoaded', () => {
     initFormListeners();
     initAuthStateListener();
 });
+
+// ===== TERMS OF SERVICE MODAL =====
+
+/**
+ * Open the Terms of Service modal
+ */
+window.openTermsModal = function (event) {
+    if (event) {
+        event.preventDefault();
+    }
+
+    const modal = document.getElementById('termsModalOverlay');
+    if (modal) {
+        modal.classList.add('active');
+        document.body.style.overflow = 'hidden'; // Prevent background scrolling
+    }
+};
+
+/**
+ * Close the Terms of Service modal
+ */
+window.closeTermsModal = function () {
+    const modal = document.getElementById('termsModalOverlay');
+    if (modal) {
+        modal.classList.remove('active');
+        document.body.style.overflow = ''; // Restore background scrolling
+    }
+};
+
+/**
+ * Accept terms and close modal
+ */
+window.acceptTerms = function () {
+    const checkbox = document.getElementById('agreeTerms');
+    if (checkbox) {
+        checkbox.checked = true;
+
+        // Trigger change event to update form validation
+        const changeEvent = new Event('change', { bubbles: true });
+        checkbox.dispatchEvent(changeEvent);
+    }
+
+    closeTermsModal();
+
+    // Optional: Show a brief confirmation
+    const termsLink = document.querySelector('.terms-link');
+    if (termsLink) {
+        const originalText = termsLink.textContent;
+        termsLink.textContent = 'Terms Accepted ✓';
+        termsLink.style.color = 'var(--success-color, #10b981)';
+
+        setTimeout(() => {
+            termsLink.textContent = originalText;
+            termsLink.style.color = '';
+        }, 2000);
+    }
+};
+
+/**
+ * Handle escape key to close modal
+ */
+document.addEventListener('keydown', function (event) {
+    if (event.key === 'Escape') {
+        const modal = document.getElementById('termsModalOverlay');
+        if (modal && modal.classList.contains('active')) {
+            closeTermsModal();
+        }
+    }
+});

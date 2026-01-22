@@ -39,6 +39,452 @@ let requests = [];
 let currentSection = 'overview';
 let filteredRequests = [];
 
+// ===== AUTHENTICATION & NOTIFICATIONS =====
+
+/**
+ * Check authentication and load user data
+ */
+function checkAuthentication() {
+    const token = localStorage.getItem('authToken');
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    console.log('Authentication check:', {
+        hasToken: !!token,
+        hasUserId: !!user.id,
+        user: user
+    });
+
+    // Only redirect if both token and user are completely missing
+    if (!token && !user.id) {
+        console.log('No authentication found, redirecting to login');
+        window.location.href = 'login.html';
+        return false;
+    }
+
+    // If we have some authentication data, proceed but warn about missing pieces
+    if (!token) {
+        console.warn('No auth token found, some features may not work');
+    }
+    if (!user.id) {
+        console.warn('No user ID found, some features may not work');
+    }
+
+    // Update current user with stored data
+    if (user.id) {
+        currentUser = { ...currentUser, ...user };
+    }
+
+    return true;
+}
+
+/**
+ * Update user's last login time
+ */
+async function updateLastLogin() {
+    try {
+        const token = localStorage.getItem('authToken');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        if (!token || !user.id) {
+            console.log('Skipping login update - missing auth data');
+            return;
+        }
+
+        await fetch(`http://localhost:3000/api/users/${user.id}/login`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        console.log('Login time updated successfully');
+    } catch (error) {
+        console.error('Error updating last login:', error);
+    }
+}
+
+/**
+ * Check for request status notifications
+ */
+async function checkNotifications() {
+    try {
+        console.log('=== CHECKING NOTIFICATIONS ===');
+        const token = localStorage.getItem('authToken');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+        console.log('Token exists:', !!token);
+        console.log('User ID:', user.id);
+
+        if (!token || !user.id) {
+            console.log('No token or user ID, skipping notifications');
+            return;
+        }
+
+        console.log('Fetching notifications from API...');
+        const response = await fetch(`http://localhost:3000/api/users/${user.id}/notifications`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        console.log('Notifications response status:', response.status);
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Notifications data:', data);
+
+            if (data.notifications && data.notifications.length > 0) {
+                console.log('Showing notification popup with', data.notifications.length, 'notifications');
+                showNotificationPopup(data.notifications);
+            } else {
+                console.log('No notifications to show');
+            }
+        } else {
+            console.error('Failed to fetch notifications:', response.status);
+        }
+    } catch (error) {
+        console.error('Error checking notifications:', error);
+    }
+}
+
+/**
+ * Show notification popup for request status updates
+ */
+function showNotificationPopup(notifications) {
+    // Create notification modal
+    const modal = document.createElement('div');
+    modal.className = 'notification-modal';
+    modal.innerHTML = `
+        <div class="notification-modal-content">
+            <div class="notification-header">
+                <h3><i class="fas fa-bell"></i> Request Updates</h3>
+                <button class="notification-close" onclick="closeNotificationModal()">&times;</button>
+            </div>
+            <div class="notification-body">
+                ${notifications.map(notification => `
+                    <div class="notification-item ${notification.type}">
+                        <div class="notification-icon">
+                            <i class="fas ${notification.type === 'success' ? 'fa-check-circle' : 'fa-exclamation-triangle'}"></i>
+                        </div>
+                        <div class="notification-content">
+                            <h4>${notification.title}</h4>
+                            <p>${notification.message}</p>
+                            <small>Category: ${notification.category}</small>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            <div class="notification-footer">
+                <button class="btn btn-primary" onclick="closeNotificationModal()">
+                    Got it, thanks!
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Add styles if not already present
+    if (!document.getElementById('notification-styles')) {
+        const styles = document.createElement('style');
+        styles.id = 'notification-styles';
+        styles.textContent = `
+            .notification-modal {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                animation: fadeIn 0.3s ease-out;
+            }
+
+            .notification-modal-content {
+                background: white;
+                border-radius: 12px;
+                max-width: 500px;
+                width: 90%;
+                max-height: 80vh;
+                overflow-y: auto;
+                box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+                animation: slideIn 0.3s ease-out;
+            }
+
+            .notification-header {
+                padding: 1.5rem;
+                border-bottom: 1px solid #e5e7eb;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .notification-header h3 {
+                margin: 0;
+                color: #1f2937;
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+            }
+
+            .notification-close {
+                background: none;
+                border: none;
+                font-size: 1.5rem;
+                cursor: pointer;
+                color: #6b7280;
+                padding: 0;
+                width: 30px;
+                height: 30px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                border-radius: 50%;
+                transition: all 0.2s;
+            }
+
+            .notification-close:hover {
+                background: #f3f4f6;
+                color: #374151;
+            }
+
+            .notification-body {
+                padding: 1.5rem;
+            }
+
+            .notification-item {
+                display: flex;
+                gap: 1rem;
+                padding: 1rem;
+                border-radius: 8px;
+                margin-bottom: 1rem;
+                border-left: 4px solid;
+            }
+
+            .notification-item.success {
+                background: #f0fdf4;
+                border-left-color: #22c55e;
+            }
+
+            .notification-item.warning {
+                background: #fefce8;
+                border-left-color: #eab308;
+            }
+
+            .notification-icon {
+                flex-shrink: 0;
+            }
+
+            .notification-item.success .notification-icon {
+                color: #22c55e;
+            }
+
+            .notification-item.warning .notification-icon {
+                color: #eab308;
+            }
+
+            .notification-content h4 {
+                margin: 0 0 0.5rem 0;
+                color: #1f2937;
+                font-size: 1rem;
+            }
+
+            .notification-content p {
+                margin: 0 0 0.5rem 0;
+                color: #4b5563;
+                font-size: 0.9rem;
+            }
+
+            .notification-content small {
+                color: #6b7280;
+                font-size: 0.8rem;
+            }
+
+            .notification-footer {
+                padding: 1.5rem;
+                border-top: 1px solid #e5e7eb;
+                text-align: center;
+            }
+
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+
+            @keyframes slideIn {
+                from { 
+                    opacity: 0;
+                    transform: translateY(-20px) scale(0.95);
+                }
+                to { 
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+        `;
+        document.head.appendChild(styles);
+    }
+}
+
+/**
+ * Close notification modal
+ */
+function closeNotificationModal() {
+    const modal = document.querySelector('.notification-modal');
+    if (modal) {
+        modal.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => {
+            modal.remove();
+        }, 300);
+    }
+}
+
+/**
+ * Test notification system (for debugging)
+ */
+function testNotifications() {
+    console.log('Testing notification system...');
+    const sampleNotifications = [
+        {
+            id: 'test1',
+            title: 'IT Support Request',
+            category: 'IT',
+            status: 'Completed',
+            message: 'Your IT request "Computer not working" has been approved!',
+            type: 'success'
+        },
+        {
+            id: 'test2',
+            title: 'Leave Request',
+            category: 'HR',
+            status: 'Rejected',
+            message: 'Your HR request "Vacation Leave" has been rejected.',
+            type: 'warning'
+        }
+    ];
+
+    showNotificationPopup(sampleNotifications);
+}
+
+/**
+ * Force check notifications (for debugging)
+ */
+async function forceCheckNotifications() {
+    console.log('Force checking notifications...');
+    await checkNotifications();
+}
+
+/**
+ * Create a test request and simulate status change (for testing)
+ */
+async function createAndTestNotification() {
+    try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.error('No auth token available');
+            return;
+        }
+
+        console.log('Creating test request...');
+
+        // Create a test request
+        const createResponse = await fetch('http://localhost:3000/api/debug/create-test-request', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!createResponse.ok) {
+            console.error('Failed to create test request');
+            return;
+        }
+
+        const createData = await createResponse.json();
+        console.log('Test request created:', createData);
+
+        // Wait a moment, then simulate status change
+        setTimeout(async () => {
+            console.log('Simulating status change...');
+
+            const statusResponse = await fetch('http://localhost:3000/api/debug/simulate-status-change', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    requestId: createData.request.id,
+                    status: 'Completed'
+                })
+            });
+
+            if (statusResponse.ok) {
+                console.log('Status changed successfully');
+                alert('Test request created and approved! Now check notifications.');
+
+                // Check notifications
+                await forceCheckNotifications();
+            } else {
+                console.error('Failed to change status');
+            }
+        }, 1000);
+
+    } catch (error) {
+        console.error('Error in test:', error);
+    }
+}
+
+/**
+ * Clean up test/fake requests (for debugging)
+ */
+async function cleanupTestRequests() {
+    try {
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.error('No auth token available');
+            return;
+        }
+
+        console.log('Cleaning up test requests...');
+
+        const response = await fetch('http://localhost:3000/api/debug/cleanup-test-requests', {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            console.log('Cleanup result:', data);
+            alert(`Cleaned up ${data.deletedCount} test requests`);
+
+            // Refresh requests
+            await loadUserRequests();
+        } else {
+            console.error('Failed to cleanup test requests');
+        }
+    } catch (error) {
+        console.error('Error cleaning up test requests:', error);
+    }
+}
+
+// Make test functions available globally for debugging
+window.testNotifications = testNotifications;
+window.forceCheckNotifications = forceCheckNotifications;
+window.checkNotifications = checkNotifications;
+window.createAndTestNotification = createAndTestNotification;
+window.cleanupTestRequests = cleanupTestRequests;
+
+// Add fadeOut animation
+const fadeOutStyle = document.createElement('style');
+fadeOutStyle.textContent = `
+    @keyframes fadeOut {
+        from { opacity: 1; }
+        to { opacity: 0; }
+    }
+`;
+document.head.appendChild(fadeOutStyle);
+
 // ===== UTILITY FUNCTIONS =====
 
 /**
@@ -51,39 +497,195 @@ function generateRequestId() {
 }
 
 /**
+ * Show requests popup modal
+ */
+function showRequestsPopup(status) {
+    console.log(`Showing ${status} requests popup`);
+
+    // Filter requests by status
+    const filteredRequests = requests.filter(request =>
+        request.status === status ||
+        (status === 'Completed' && request.status === 'Approved')
+    );
+
+    console.log(`Found ${filteredRequests.length} ${status} requests`);
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'requests-modal';
+    modal.innerHTML = `
+        <div class="requests-modal-content">
+            <div class="requests-modal-header">
+                <h3>
+                    <i class="fas ${getStatusIcon(status)}"></i>
+                    ${status} Requests (${filteredRequests.length})
+                </h3>
+                <button class="requests-modal-close" onclick="closeRequestsModal()">&times;</button>
+            </div>
+            <div class="requests-modal-body">
+                ${filteredRequests.length > 0 ?
+            filteredRequests.map(request => `
+                        <div class="modal-request-item">
+                            <div class="modal-request-icon ${status.toLowerCase()}">
+                                <i class="fas ${getStatusIcon(status)}"></i>
+                            </div>
+                            <div class="modal-request-content">
+                                <h4 class="modal-request-title">${request.title || 'No Title'}</h4>
+                                <div class="modal-request-meta">
+                                    <span><i class="fas fa-tag"></i> ${request.category || 'No Category'}</span>
+                                    <span><i class="fas fa-calendar"></i> ${formatDate(request.dateSubmitted)}</span>
+                                    <span><i class="fas fa-flag"></i> ${request.priority || 'Normal'}</span>
+                                </div>
+                                <p class="modal-request-description">${request.description || 'No description provided'}</p>
+                            </div>
+                        </div>
+                    `).join('') :
+            `<div class="modal-empty-state">
+                        <i class="fas ${getStatusIcon(status)}"></i>
+                        <h3>No ${status} Requests</h3>
+                        <p>You don't have any ${status.toLowerCase()} requests yet.</p>
+                    </div>`
+        }
+            </div>
+            <div class="requests-modal-footer">
+                <button class="btn btn-primary" onclick="closeRequestsModal()">
+                    Close
+                </button>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+}
+
+/**
+ * Close requests modal
+ */
+function closeRequestsModal() {
+    const modal = document.querySelector('.requests-modal');
+    if (modal) {
+        modal.style.animation = 'fadeOut 0.3s ease-out';
+        setTimeout(() => {
+            modal.remove();
+            document.body.style.overflow = '';
+        }, 300);
+    }
+}
+
+/**
+ * Get icon for request status
+ */
+function getStatusIcon(status) {
+    switch (status) {
+        case 'Pending': return 'fa-clock';
+        case 'Completed': return 'fa-check-circle';
+        case 'Approved': return 'fa-check-circle';
+        case 'Rejected': return 'fa-times-circle';
+        case 'In Progress': return 'fa-spinner';
+        default: return 'fa-file';
+    }
+}
+
+/**
+ * Update dashboard statistics
+ */
+function updateDashboardStats() {
+    console.log('Updating dashboard stats with', requests.length, 'requests');
+
+    // Count requests by status
+    const pending = requests.filter(r => r.status === 'Pending').length;
+    const completed = requests.filter(r => r.status === 'Completed' || r.status === 'Approved').length;
+    const rejected = requests.filter(r => r.status === 'Rejected').length;
+
+    // Update UI
+    const pendingEl = document.getElementById('pendingCount');
+    const completedEl = document.getElementById('completedCount');
+    const rejectedEl = document.getElementById('rejectedCount');
+    const leaveBalanceEl = document.getElementById('leaveBalance');
+
+    if (pendingEl) pendingEl.textContent = pending;
+    if (completedEl) completedEl.textContent = completed;
+    if (rejectedEl) rejectedEl.textContent = rejected;
+
+    // Update leave balance from user data
+    if (leaveBalanceEl && currentUser.leaveBalance) {
+        leaveBalanceEl.textContent = currentUser.leaveBalance.annual || 0;
+    }
+
+    console.log('Stats updated:', { pending, completed, rejected });
+}
+
+// Make functions available globally
+window.showRequestsPopup = showRequestsPopup;
+window.closeRequestsModal = closeRequestsModal;
+
+/**
  * Format date for display based on user preferences
  */
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    const format = currentUser.preferences.dateFormat;
-    const timezone = currentUser.preferences.timezone;
+function formatDate(dateInput) {
+    try {
+        let date;
 
-    // Convert to user's timezone
-    const options = {
-        timeZone: timezone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit'
-    };
+        // Handle different date input types
+        if (!dateInput) {
+            return 'No date';
+        }
 
-    const localDate = new Intl.DateTimeFormat('en-US', options).format(date);
+        // Handle Firestore timestamp objects
+        if (dateInput && typeof dateInput === 'object' && dateInput.seconds) {
+            date = new Date(dateInput.seconds * 1000);
+        }
+        // Handle Firestore timestamp with toDate method
+        else if (dateInput && typeof dateInput.toDate === 'function') {
+            date = dateInput.toDate();
+        }
+        // Handle regular date strings/objects
+        else {
+            date = new Date(dateInput);
+        }
 
-    switch (format) {
-        case 'DD/MM/YYYY':
-            const [month, day, year] = localDate.split('/');
-            return `${day}/${month}/${year}`;
-        case 'YYYY-MM-DD':
-            const [m, d, y] = localDate.split('/');
-            return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
-        case 'MMM DD, YYYY':
-            return date.toLocaleDateString('en-US', {
-                timeZone: timezone,
-                year: 'numeric',
-                month: 'short',
-                day: 'numeric'
-            });
-        default: // MM/DD/YYYY
-            return localDate;
+        // Check if date is valid
+        if (isNaN(date.getTime())) {
+            console.warn('Invalid date input:', dateInput);
+            return 'Invalid date';
+        }
+
+        const format = currentUser.preferences.dateFormat;
+        const timezone = currentUser.preferences.timezone;
+
+        // Convert to user's timezone
+        const options = {
+            timeZone: timezone,
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        };
+
+        const localDate = new Intl.DateTimeFormat('en-US', options).format(date);
+
+        switch (format) {
+            case 'DD/MM/YYYY':
+                const [month, day, year] = localDate.split('/');
+                return `${day}/${month}/${year}`;
+            case 'YYYY-MM-DD':
+                const [m, d, y] = localDate.split('/');
+                return `${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`;
+            case 'MMM DD, YYYY':
+                return date.toLocaleDateString('en-US', {
+                    timeZone: timezone,
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            default: // MM/DD/YYYY
+                return localDate;
+        }
+    } catch (error) {
+        console.error('Error formatting date:', error, 'Input:', dateInput);
+        return 'Date error';
     }
 }
 
@@ -138,20 +740,14 @@ function showMessage(text, type = 'success') {
 /**
  * Update statistics
  */
-function updateStats() {
-    const pendingCount = requests.filter(r => r.status === 'Pending').length;
-    const completedCount = requests.filter(r => r.status === 'Completed').length;
-    const thisMonthCount = requests.filter(r => {
-        const requestDate = new Date(r.dateSubmitted);
-        const currentDate = new Date();
-        return requestDate.getMonth() === currentDate.getMonth() &&
-            requestDate.getFullYear() === currentDate.getFullYear();
-    }).length;
+// This function is replaced by updateDashboardStats above
 
-    document.getElementById('pendingCount').textContent = pendingCount;
-    document.getElementById('completedCount').textContent = completedCount;
-    document.getElementById('thisMonth').textContent = thisMonthCount;
-    document.getElementById('leaveBalance').textContent = `${currentUser.leaveBalance.annual}`;
+/**
+ * Temporary updateStats function for compatibility
+ */
+function updateStats() {
+    console.log('updateStats called - redirecting to updateDashboardStats');
+    updateDashboardStats();
 }
 
 // ===== NAVIGATION FUNCTIONS =====
@@ -393,20 +989,29 @@ function initRequestForm() {
     // Show leave fields when HR category selected
     if (categorySelect) {
         categorySelect.addEventListener('change', () => {
+            const leaveFields = document.getElementById('leaveFields');
+            const availEl = document.getElementById('availableLeave');
+
             if (categorySelect.value === 'HR') {
-                if (leaveFields) leaveFields.style.display = 'block';
-                // show available balance
-                if (availEl) availEl.textContent = `${currentUser.leaveBalance.annual} days`;
+                // Don't automatically show leave fields - let user choose via service buttons
+                // Only show if they came from the "Request Leave" button
+                if (leaveFields && leaveFields.style.display === 'block') {
+                    // Keep it visible if already shown
+                    if (availEl) availEl.textContent = `${currentUser.leaveBalance.annual} days`;
+                }
             } else {
+                // Hide leave fields for non-HR categories
                 if (leaveFields) leaveFields.style.display = 'none';
             }
         });
-        // initialize visibility based on current value
+
+        // Initialize visibility based on current value
         if (categorySelect.value === 'HR') {
-            if (leaveFields) leaveFields.style.display = 'block';
-            if (availEl) availEl.textContent = `${currentUser.leaveBalance.annual} days`;
-        } else {
-            if (leaveFields) leaveFields.style.display = 'none';
+            const leaveFields = document.getElementById('leaveFields');
+            const availEl = document.getElementById('availableLeave');
+            if (leaveFields && leaveFields.style.display === 'block') {
+                if (availEl) availEl.textContent = `${currentUser.leaveBalance.annual} days`;
+            }
         }
     }
 
@@ -433,35 +1038,32 @@ function initRequestForm() {
 }
 
 /**
- * Handle form submission
+ * Handle form submission with backend API
  */
-function handleFormSubmit(e) {
+async function handleFormSubmit(e) {
     e.preventDefault();
 
     const formData = new FormData(e.target);
     const requestData = {
-        id: generateRequestId(),
         title: formData.get('title'),
         category: formData.get('category'),
         priority: formData.get('priority'),
         description: formData.get('description'),
-        status: 'Pending',
-        dateSubmitted: getCurrentTimestamp(),
-        lastUpdated: getCurrentTimestamp(),
         type: 'General'
     };
-    // If HR leave request, include dates and days
+
+    // If HR category, check if leave dates are provided
     if (requestData.category === 'HR') {
         const start = formData.get('leaveStart');
         const end = formData.get('leaveEnd');
-        const days = calculateLeaveDays(start, end);
-        requestData.type = 'Leave';
-        requestData.leave = { start, end, days };
-        requestData.deduct = document.getElementById('deductFromBalance')?.checked || false;
-        // If user chose to deduct immediately, ensure enough balance
-        if (requestData.deduct && days > currentUser.leaveBalance.annual) {
-            showMessage('Not enough annual leave balance for this request.', 'error');
-            return;
+
+        // Only treat as leave request if dates are provided
+        if (start && end) {
+            const days = calculateLeaveDays(start, end);
+            requestData.type = 'Leave';
+            requestData.leave = { start, end, days };
+            requestData.deduct = document.getElementById('deductFromBalance')?.checked || false;
+            // Note: Balance validation will be done by admin when approving
         }
     }
 
@@ -476,22 +1078,51 @@ function handleFormSubmit(e) {
     submitBtn.innerHTML = '<span class="spinner"></span> Submitting...';
     submitBtn.disabled = true;
 
-    // Simulate API call
-    setTimeout(() => {
-        // Add request to array
-        requests.unshift(requestData);
+    try {
+        // Submit request to backend API
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('http://localhost:3000/api/requests', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(requestData)
+        });
 
-        // Deduct leave immediately if requested
-        if (requestData.type === 'Leave' && requestData.deduct) {
-            currentUser.leaveBalance.annual = Math.max(0, currentUser.leaveBalance.annual - requestData.leave.days);
-            updateLeaveBalance();
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to submit request');
         }
+
+        // Add request to local array for immediate UI update
+        const newRequest = {
+            id: data.request.id,
+            title: requestData.title,
+            category: requestData.category,
+            priority: requestData.priority,
+            description: requestData.description,
+            status: 'Pending',
+            dateSubmitted: getCurrentTimestamp(),
+            lastUpdated: getCurrentTimestamp(),
+            type: requestData.type
+        };
+
+        if (requestData.type === 'Leave') {
+            newRequest.leave = requestData.leave;
+            newRequest.deduct = requestData.deduct;
+        }
+
+        requests.unshift(newRequest);
+
+        // NOTE: Leave balance is NOT deducted here - only when request is approved by admin
 
         // Reset form
         clearForm();
 
-        // Show success message
-        showMessage('Request submitted successfully! You will receive updates via email.');
+        // Show success message with routing information
+        showMessage(data.message || 'Request submitted successfully!');
 
         // Update stats
         updateStats();
@@ -505,8 +1136,15 @@ function handleFormSubmit(e) {
         document.querySelector('[data-section="your-requests"]').classList.add('active');
         document.querySelector('[data-section="submit-request"]').classList.remove('active');
 
-        console.log('New request submitted:', requestData);
-    }, 1500);
+        console.log('Request submitted successfully:', data.request);
+    } catch (error) {
+        console.error('Error submitting request:', error);
+        showMessage('Failed to submit request: ' + error.message, 'error');
+
+        // Reset button
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
 }
 
 /**
@@ -534,8 +1172,8 @@ function validateForm(data) {
         showFieldError('requestDescription', 'Description is required');
         isValid = false;
     }
-    // additional validation for leave requests
-    if (data.category === 'HR' && data.type === 'Leave') {
+    // additional validation for leave requests only
+    if (data.type === 'Leave') {
         if (!data.leave || !data.leave.start || !data.leave.end || data.leave.days <= 0) {
             showMessage('Please provide valid start/end dates for leave.', 'error');
             isValid = false;
@@ -635,47 +1273,9 @@ function clearForm() {
 /**
  * Load your requests section
  */
-function loadYourRequests() {
-    renderRequests();
-    initFilters();
-}
-
 /**
  * Render requests grid
  */
-function renderRequests() {
-    const grid = document.getElementById('requestsGrid');
-
-    if (filteredRequests.length === 0) {
-        grid.innerHTML = `
-            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--gray-500);">
-                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
-                <h3>No requests found</h3>
-                <p>Try adjusting your filters or submit a new request.</p>
-            </div>
-        `;
-        return;
-    }
-
-    grid.innerHTML = filteredRequests.map(request => `
-        <div class="request-card">
-            <div class="request-header">
-                <div>
-                    <h3 class="request-title">${request.title}</h3>
-                    <span class="request-category">${request.category}</span>
-                </div>
-            </div>
-            <p class="request-description">${request.description}</p>
-            <div class="request-footer">
-                <span class="request-status ${getStatusClass(request.status)}">
-                    ${request.status}
-                </span>
-                <span class="request-date">${formatDate(request.dateSubmitted)}</span>
-            </div>
-        </div>
-    `).join('');
-}
-
 /**
  * Initialize filters
  */
@@ -910,9 +1510,29 @@ document.addEventListener('DOMContentLoaded', function () {
 async function loadCompanySettingsUser() {
     try {
         const token = localStorage.getItem('authToken');
-        const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
-        const res = await fetch('http://localhost:3000/api/company/settings', { headers });
-        if (!res.ok) return;
+        if (!token) {
+            console.warn('No auth token available for company settings');
+            return;
+        }
+
+        const headers = { 'Authorization': `Bearer ${token}` };
+
+        // Add timeout to prevent hanging
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
+
+        const res = await fetch('http://localhost:3000/api/company/settings', {
+            headers,
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!res.ok) {
+            console.warn('Company settings request failed:', res.status);
+            return;
+        }
+
         const data = await res.json();
         if (data && data.success && data.company && data.company.settings) {
             const s = data.company.settings;
@@ -925,9 +1545,15 @@ async function loadCompanySettingsUser() {
             // Update UI
             updateLeaveBalance();
             updateStats();
+
+            console.log('Company settings loaded successfully');
         }
     } catch (e) {
-        console.warn('Could not load company settings:', e);
+        if (e.name === 'AbortError') {
+            console.warn('Company settings request timed out');
+        } else {
+            console.warn('Could not load company settings:', e.message);
+        }
     }
 }
 
@@ -1568,24 +2194,28 @@ document.getElementById('welcomeLater')?.addEventListener('click', function () {
  * Check if user needs to complete their profile
  */
 async function checkProfileCompletion() {
-    // If user already has both department and job title, mark as completed
-    if (currentUser.department && currentUser.jobTitle) {
-        localStorage.setItem('officeflow_profile_completed', 'true');
-        return; // Don't show popup
-    }
+    try {
+        // If user already has both department and job title, mark as completed
+        if (currentUser.department && currentUser.jobTitle) {
+            localStorage.setItem('officeflow_profile_completed', 'true');
+            return; // Don't show popup
+        }
 
-    // Check if user has already been prompted
-    const hasCompletedProfile = localStorage.getItem('officeflow_profile_completed');
+        // Check if user has already been prompted
+        const hasCompletedProfile = localStorage.getItem('officeflow_profile_completed');
 
-    // Only show popup if not completed AND missing department or job title
-    if (!hasCompletedProfile) {
-        // Load company departments
-        await loadCompanyDepartments();
+        // Only show popup if not completed AND missing department or job title
+        if (!hasCompletedProfile) {
+            // Load company departments with timeout
+            await loadCompanyDepartments();
 
-        // Show popup after a short delay
-        setTimeout(() => {
-            showProfilePopup();
-        }, 1000);
+            // Show popup after a short delay
+            setTimeout(() => {
+                showProfilePopup();
+            }, 1000);
+        }
+    } catch (error) {
+        console.warn('Profile completion check failed:', error);
     }
 }
 
@@ -1786,3 +2416,648 @@ async function requestAdminAccess() {
 
 // Admin request button handler
 document.getElementById('requestAdminBtn')?.addEventListener('click', requestAdminAccess);
+// ===== SERVICE BUTTONS =====
+
+/**
+ * Initialize service buttons
+ */
+function initServiceButtons() {
+    const serviceButtons = document.querySelectorAll('.service-btn');
+
+    serviceButtons.forEach(button => {
+        button.addEventListener('click', function () {
+            const category = this.getAttribute('data-category');
+            const type = this.getAttribute('data-type');
+
+            // Pre-fill form and switch to submit section
+            switchSection('submit-request');
+            document.querySelector('[data-section="submit-request"]').classList.add('active');
+            document.querySelector('.nav-link.active').classList.remove('active');
+
+            // Update nav
+            document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+            document.querySelector('[data-section="submit-request"]').classList.add('active');
+
+            // Pre-fill form
+            setTimeout(() => {
+                document.getElementById('requestCategory').value = category;
+
+                // Show leave fields if this is a leave request
+                if (category === 'HR' && type === 'Leave') {
+                    const leaveFields = document.getElementById('leaveFields');
+                    if (leaveFields) {
+                        leaveFields.style.display = 'block';
+                        // Show available balance
+                        const availEl = document.getElementById('availableLeave');
+                        if (availEl) availEl.textContent = `${currentUser.leaveBalance.annual} days`;
+                    }
+                }
+
+                document.getElementById('requestTitle').focus();
+
+                // Pre-fill title based on type
+                const titleSuggestions = {
+                    'Hardware': 'Hardware Issue - ',
+                    'Software': 'Software Request - ',
+                    'Network': 'Network Issue - ',
+                    'Electrical': 'Electrical Issue - ',
+                    'Plumbing': 'Plumbing Issue - ',
+                    'HVAC': 'HVAC Issue - ',
+                    'Leave': 'Leave Request - ',
+                    'Documents': 'Document Request - '
+                };
+
+                if (titleSuggestions[type]) {
+                    document.getElementById('requestTitle').value = titleSuggestions[type];
+                }
+            }, 100);
+        });
+    });
+}
+
+// ===== REQUEST SUBMISSION =====
+
+/**
+ * Handle form submission with backend API
+ */
+async function handleFormSubmit(e) {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    const requestData = {
+        title: formData.get('title'),
+        category: formData.get('category'),
+        priority: formData.get('priority'),
+        description: formData.get('description'),
+        type: 'General'
+    };
+
+    // If HR category, check if leave dates are provided
+    if (requestData.category === 'HR') {
+        const start = formData.get('leaveStart');
+        const end = formData.get('leaveEnd');
+
+        // Only treat as leave request if dates are provided
+        if (start && end) {
+            const days = calculateLeaveDays(start, end);
+            requestData.type = 'Leave';
+            requestData.leave = { start, end, days };
+            requestData.deduct = document.getElementById('deductFromBalance')?.checked || false;
+            // Note: Balance validation will be done by admin when approving
+        }
+    }
+
+    // Validate form
+    if (!validateForm(requestData)) {
+        return;
+    }
+
+    // Add loading state
+    const submitBtn = document.getElementById('submitRequest');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<span class="spinner"></span> Submitting...';
+    submitBtn.disabled = true;
+
+    try {
+        // Submit request to backend API
+        const token = localStorage.getItem('authToken');
+        const response = await fetch('http://localhost:3000/api/requests', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(requestData)
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to submit request');
+        }
+
+        // Add request to local array for immediate UI update
+        const newRequest = {
+            id: data.request.id,
+            title: requestData.title,
+            category: requestData.category,
+            priority: requestData.priority,
+            description: requestData.description,
+            status: 'Pending',
+            dateSubmitted: getCurrentTimestamp(),
+            lastUpdated: getCurrentTimestamp(),
+            type: requestData.type
+        };
+
+        if (requestData.type === 'Leave') {
+            newRequest.leave = requestData.leave;
+            newRequest.deduct = requestData.deduct;
+        }
+
+        requests.unshift(newRequest);
+
+        // NOTE: Leave balance is NOT deducted here - only when request is approved by admin
+
+        // Reset form
+        clearForm();
+
+        // Show success message with routing information
+        showMessage(data.message || 'Request submitted successfully!');
+
+        // Update stats
+        updateStats();
+
+        // Reset button
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+
+        // Switch to requests view
+        switchSection('your-requests');
+        document.querySelector('[data-section="your-requests"]').classList.add('active');
+        document.querySelector('[data-section="submit-request"]').classList.remove('active');
+
+        console.log('Request submitted successfully:', data.request);
+    } catch (error) {
+        console.error('Error submitting request:', error);
+        showMessage('Failed to submit request: ' + error.message, 'error');
+
+        // Reset button
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    }
+}
+
+// ===== FORM INITIALIZATION =====
+
+/**
+ * Initialize request form
+ */
+function initRequestForm() {
+    const form = document.getElementById('requestForm');
+    const clearBtn = document.getElementById('clearForm');
+    const categorySelect = document.getElementById('requestCategory');
+    const leaveFields = document.getElementById('leaveFields');
+    const calcBtn = document.getElementById('calcLeaveBtn');
+    const leaveStart = document.getElementById('leaveStart');
+    const leaveEnd = document.getElementById('leaveEnd');
+    const leaveDaysEl = document.getElementById('leaveDays');
+    const availEl = document.getElementById('availableLeave');
+    const deductChk = document.getElementById('deductFromBalance');
+
+    if (form) {
+        form.addEventListener('submit', handleFormSubmit);
+    }
+
+    if (clearBtn) {
+        clearBtn.addEventListener('click', clearForm);
+    }
+
+    // Show leave fields when HR category selected
+    if (categorySelect) {
+        categorySelect.addEventListener('change', () => {
+            const leaveFields = document.getElementById('leaveFields');
+            const availEl = document.getElementById('availableLeave');
+
+            if (categorySelect.value === 'HR') {
+                // Don't automatically show leave fields - let user choose via service buttons
+                // Only show if they came from the "Request Leave" button
+                if (leaveFields && leaveFields.style.display === 'block') {
+                    // Keep it visible if already shown
+                    if (availEl) availEl.textContent = `${currentUser.leaveBalance.annual} days`;
+                }
+            } else {
+                // Hide leave fields for non-HR categories
+                if (leaveFields) leaveFields.style.display = 'none';
+            }
+        });
+
+        // Initialize visibility based on current value
+        if (categorySelect.value === 'HR') {
+            const leaveFields = document.getElementById('leaveFields');
+            const availEl = document.getElementById('availableLeave');
+            if (leaveFields && leaveFields.style.display === 'block') {
+                if (availEl) availEl.textContent = `${currentUser.leaveBalance.annual} days`;
+            }
+        }
+    }
+
+    // Calculate leave days
+    if (calcBtn) {
+        calcBtn.addEventListener('click', () => {
+            const days = calculateLeaveDays(leaveStart.value, leaveEnd.value);
+            if (leaveDaysEl) leaveDaysEl.textContent = days;
+            if (availEl) {
+                const remaining = currentUser.leaveBalance.annual - days;
+                availEl.textContent = `${currentUser.leaveBalance.annual} available · After: ${remaining >= 0 ? remaining : 0}`;
+                if (remaining < 0) availEl.style.color = 'var(--error-color)';
+                else availEl.style.color = '';
+            }
+        });
+    }
+
+    // Add form validation
+    const inputs = form?.querySelectorAll('input, select, textarea');
+    inputs?.forEach(input => {
+        input.addEventListener('blur', validateField);
+        input.addEventListener('input', clearFieldError);
+    });
+}
+
+// ===== DASHBOARD INITIALIZATION =====
+
+/**
+ * Initialize dashboard when DOM is loaded
+ */
+document.addEventListener('DOMContentLoaded', function () {
+    console.log('officeFlow Dashboard Initializing...');
+
+    // Check authentication first
+    if (!checkAuthentication()) {
+        return; // Will redirect to login
+    }
+
+    // Show loading overlay
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('hidden');
+    }
+
+    try {
+        // Initialize core components (these should be fast)
+        console.log('Initializing user info...');
+        initUserInfo();
+
+        console.log('Initializing navigation...');
+        initNavigation();
+
+        console.log('Initializing request form...');
+        initRequestForm();
+
+        console.log('Initializing service buttons...');
+        initServiceButtons();
+
+        console.log('Initializing user interface...');
+        initUserInterface();
+
+        console.log('Initializing settings actions...');
+        initSettingsActions();
+
+        console.log('Handling logout...');
+        handleLogout();
+
+        // Apply user preferences
+        console.log('Applying accessibility settings...');
+        applyAccessibilitySettings();
+
+        console.log('Applying theme...');
+        applyTheme(currentUser.preferences.theme);
+
+        console.log('Applying color scheme...');
+        applyColorScheme(currentUser.preferences.colorScheme);
+
+        // Load initial section
+        console.log('Loading overview...');
+        loadOverview();
+
+        console.log('Dashboard core initialized successfully');
+
+        // Hide loading overlay quickly
+        setTimeout(() => {
+            if (loadingOverlay) {
+                loadingOverlay.classList.add('hidden');
+            }
+        }, 500);
+
+        // Load optional features asynchronously (don't block UI)
+        setTimeout(async () => {
+            try {
+                loadCompanySettingsUser();
+                await loadUserRequests(); // Load user requests from backend
+                checkProfileCompletion();
+                checkAdminRequestEligibility();
+
+                // Update last login and check for notifications
+                await updateLastLogin();
+                await checkNotifications();
+            } catch (error) {
+                console.warn('Optional features failed to load:', error);
+            }
+        }, 100);
+
+    } catch (error) {
+        console.error('Dashboard initialization error:', error);
+
+        // Hide loading overlay even if there's an error
+        if (loadingOverlay) {
+            loadingOverlay.classList.add('hidden');
+        }
+
+        // Show error message
+        showMessage('Dashboard loaded with limited functionality. Some features may not work.', 'error');
+    }
+
+    console.log('Dashboard ready for user interaction');
+});
+
+// ===== SECTION NAVIGATION =====
+
+/**
+ * Switch between sections
+ */
+function switchSection(sectionId) {
+    // Hide all sections
+    const sections = document.querySelectorAll('.content-section');
+    sections.forEach(section => {
+        section.classList.remove('active');
+    });
+
+    // Show target section
+    const targetSection = document.getElementById(sectionId);
+    if (targetSection) {
+        targetSection.classList.add('active');
+
+        // Load section-specific content
+        switch (sectionId) {
+            case 'overview':
+                loadOverview();
+                break;
+            case 'your-requests':
+                loadYourRequests();
+                break;
+            case 'hr-services':
+                loadHRServices();
+                break;
+            case 'profile':
+                loadProfile();
+                break;
+            case 'settings':
+                loadSettings();
+                break;
+        }
+    }
+}
+
+// ===== YOUR REQUESTS SECTION =====
+
+/**
+ * Load your requests section
+ */
+async function loadYourRequests() {
+    showRequestsLoading();
+
+    try {
+        // Load requests from backend
+        await loadUserRequests();
+
+        // Initialize filters and render
+        initFilters();
+        applyFilters();
+    } catch (error) {
+        console.error('Error loading requests:', error);
+        showMessage('Failed to load requests', 'error');
+    } finally {
+        hideRequestsLoading();
+    }
+}
+
+/**
+ * Load user requests from backend
+ */
+async function loadUserRequests() {
+    try {
+        console.log('Loading user requests...');
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            console.warn('No auth token available for loading requests');
+            requests = []; // Set empty array so UI doesn't break
+            return;
+        }
+
+        console.log('Making API call to load requests...');
+        const response = await fetch('http://localhost:3000/api/requests', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        console.log('Requests API response status:', response.status);
+
+        if (response.ok) {
+            const data = await response.json();
+            requests = data.requests || [];
+            console.log('Successfully loaded requests:', requests.length);
+
+            // Update dashboard stats after loading requests
+            updateDashboardStats();
+        } else {
+            console.error('Failed to load requests:', response.status, response.statusText);
+            requests = []; // Set empty array so UI doesn't break
+
+            // Try to get error details
+            try {
+                const errorData = await response.json();
+                console.error('Error details:', errorData);
+            } catch (e) {
+                console.error('Could not parse error response');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading user requests:', error);
+        requests = []; // Set empty array so UI doesn't break
+    }
+}
+
+/**
+ * Show loading state for requests
+ */
+function showRequestsLoading() {
+    const grid = document.getElementById('requestsGrid');
+    if (grid) {
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--gray-500);">
+                <div class="loading-spinner" style="margin: 0 auto 1rem; width: 40px; height: 40px;"></div>
+                <p>Loading your requests...</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Hide loading state for requests
+ */
+function hideRequestsLoading() {
+    // Loading will be replaced by actual content in renderRequests
+}
+
+/**
+ * Render requests grid
+ */
+function renderRequests() {
+    const grid = document.getElementById('requestsGrid');
+    if (!grid) return;
+
+    console.log('Rendering requests:', filteredRequests.length);
+    console.log('Sample request data:', filteredRequests[0]);
+
+    if (filteredRequests.length === 0) {
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--gray-500);">
+                <i class="fas fa-inbox" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                <h3>No requests found</h3>
+                <p>Try adjusting your filters or submit a new request.</p>
+            </div>
+        `;
+        return;
+    }
+
+    try {
+        grid.innerHTML = filteredRequests.map((request, index) => {
+            console.log(`Processing request ${index}:`, {
+                title: request.title,
+                dateSubmitted: request.dateSubmitted,
+                dateType: typeof request.dateSubmitted
+            });
+
+            return `
+                <div class="request-card">
+                    <div class="request-header">
+                        <div>
+                            <h3 class="request-title">${request.title || 'No Title'}</h3>
+                            <span class="request-category">${request.category || 'No Category'}</span>
+                        </div>
+                    </div>
+                    <p class="request-description">${request.description || 'No Description'}</p>
+                    <div class="request-footer">
+                        <span class="request-status ${getStatusClass(request.status)}">
+                            ${request.status || 'Unknown'}
+                        </span>
+                        <span class="request-date">${formatDate(request.dateSubmitted)}</span>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Error rendering requests:', error);
+        grid.innerHTML = `
+            <div style="grid-column: 1 / -1; text-align: center; padding: 3rem; color: var(--red-500);">
+                <i class="fas fa-exclamation-triangle" style="font-size: 3rem; margin-bottom: 1rem; display: block;"></i>
+                <h3>Error loading requests</h3>
+                <p>There was an error displaying your requests. Please refresh the page.</p>
+            </div>
+        `;
+    }
+}
+
+/**
+ * Initialize filters
+ */
+function initFilters() {
+    const statusFilter = document.getElementById('statusFilter');
+    const categoryFilter = document.getElementById('categoryFilter');
+    const clearFilters = document.getElementById('clearFilters');
+
+    if (statusFilter) {
+        statusFilter.addEventListener('change', applyFilters);
+    }
+    if (categoryFilter) {
+        categoryFilter.addEventListener('change', applyFilters);
+    }
+    if (clearFilters) {
+        clearFilters.addEventListener('click', function () {
+            if (statusFilter) statusFilter.value = '';
+            if (categoryFilter) categoryFilter.value = '';
+            applyFilters();
+        });
+    }
+}
+
+/**
+ * Apply filters to requests
+ */
+function applyFilters() {
+    const statusFilter = document.getElementById('statusFilter');
+    const categoryFilter = document.getElementById('categoryFilter');
+
+    const statusValue = statusFilter ? statusFilter.value : '';
+    const categoryValue = categoryFilter ? categoryFilter.value : '';
+
+    filteredRequests = requests.filter(request => {
+        const matchesStatus = !statusValue || request.status === statusValue;
+        const matchesCategory = !categoryValue || request.category === categoryValue;
+        return matchesStatus && matchesCategory;
+    });
+
+    renderRequests();
+}
+
+// ===== OVERVIEW SECTION =====
+
+/**
+ * Load overview section
+ */
+function loadOverview() {
+    updateStats();
+    loadRecentActivity();
+}
+
+/**
+ * Load recent activity
+ */
+function loadRecentActivity() {
+    const activityList = document.getElementById('recentActivity');
+    if (!activityList) return;
+
+    const recentRequests = requests
+        .sort((a, b) => new Date(b.lastUpdated) - new Date(a.lastUpdated))
+        .slice(0, 5);
+
+    activityList.innerHTML = recentRequests.map(request => `
+        <div class="activity-item">
+            <div class="activity-icon">
+                <i class="fas fa-${getActivityIcon(request.category)}"></i>
+            </div>
+            <div class="activity-content">
+                <div class="activity-text">
+                    ${request.title} - ${request.status}
+                </div>
+                <div class="activity-time">
+                    ${formatDate(request.lastUpdated)}
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+/**
+ * Get activity icon based on category
+ */
+function getActivityIcon(category) {
+    const iconMap = {
+        'IT': 'laptop',
+        'Maintenance': 'tools',
+        'HR': 'users'
+    };
+    return iconMap[category] || 'file-alt';
+}
+
+// ===== HR SERVICES SECTION =====
+
+/**
+ * Load HR services section
+ */
+function loadHRServices() {
+    updateLeaveBalance();
+}
+
+/**
+ * Update leave balance display
+ */
+function updateLeaveBalance() {
+    const annualEl = document.getElementById('annualLeave');
+    const sickEl = document.getElementById('sickLeave');
+    const personalEl = document.getElementById('personalLeave');
+    const emergencyEl = document.getElementById('emergencyLeave');
+
+    if (annualEl) annualEl.textContent = `${currentUser.leaveBalance.annual} days`;
+    if (sickEl) sickEl.textContent = `${currentUser.leaveBalance.sick} days`;
+    if (personalEl) personalEl.textContent = `${currentUser.leaveBalance.personal} days`;
+    if (emergencyEl) emergencyEl.textContent = `${currentUser.leaveBalance.emergency} days`;
+}

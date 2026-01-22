@@ -1,14 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Register - officeFlow</title>
+    <link rel="icon" type="image/svg+xml" href="../../assets/favicon.svg">
     <link rel="stylesheet" href="../styles/base.css">
     <link rel="stylesheet" href="../styles/authPages.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
+
 <body class="auth-body">
     <!-- Animated Background -->
     <div class="background-animation">
@@ -36,21 +39,15 @@
             <div class="form-section">
                 <h2 class="form-title">Create Account</h2>
                 <p class="form-subtitle">Join officeFlow today</p>
-                
+
                 <form id="registerForm" class="auth-form">
                     <div class="form-group">
                         <label for="fullName" class="form-label">
                             <i class="fas fa-user"></i>
                             Full Name
                         </label>
-                        <input 
-                            type="text" 
-                            id="fullName" 
-                            name="fullName" 
-                            class="form-input" 
-                            placeholder="Enter your full name"
-                            required
-                        >
+                        <input type="text" id="fullName" name="fullName" class="form-input"
+                            placeholder="Enter your full name" required>
                         <span class="error-message" id="fullNameError"></span>
                     </div>
 
@@ -59,14 +56,8 @@
                             <i class="fas fa-envelope"></i>
                             Email Address
                         </label>
-                        <input 
-                            type="email" 
-                            id="email" 
-                            name="email" 
-                            class="form-input" 
-                            placeholder="Enter your email"
-                            required
-                        >
+                        <input type="email" id="email" name="email" class="form-input" placeholder="Enter your email"
+                            required>
                         <span class="error-message" id="emailError"></span>
                     </div>
 
@@ -76,14 +67,8 @@
                             Password
                         </label>
                         <div class="password-input-wrapper">
-                            <input 
-                                type="password" 
-                                id="password" 
-                                name="password" 
-                                class="form-input" 
-                                placeholder="Create a password"
-                                required
-                            >
+                            <input type="password" id="password" name="password" class="form-input"
+                                placeholder="Create a password" required>
                             <button type="button" class="password-toggle" id="passwordToggle">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -97,14 +82,8 @@
                             Confirm Password
                         </label>
                         <div class="password-input-wrapper">
-                            <input 
-                                type="password" 
-                                id="confirmPassword" 
-                                name="confirmPassword" 
-                                class="form-input" 
-                                placeholder="Confirm your password"
-                                required
-                            >
+                            <input type="password" id="confirmPassword" name="confirmPassword" class="form-input"
+                                placeholder="Confirm your password" required>
                             <button type="button" class="password-toggle" id="confirmPasswordToggle">
                                 <i class="fas fa-eye"></i>
                             </button>
@@ -136,14 +115,36 @@
                             <i class="fas fa-key"></i>
                             Company Code
                         </label>
-                        <input 
-                            type="text" 
-                            id="companyCode" 
-                            name="companyCode" 
-                            class="form-input" 
-                            placeholder="Enter company code"
-                        >
+                        <input type="text" id="companyCode" name="companyCode" class="form-input"
+                            placeholder="Enter company code">
                         <span class="error-message" id="companyCodeError"></span>
+                    </div>
+
+                    <!-- Employee Department & Job Title (shown after company code is verified) -->
+                    <div id="employeeDetailsGroup" style="display: none;">
+                        <div class="form-group">
+                            <label for="employeeDepartment" class="form-label">
+                                <i class="fas fa-briefcase"></i>
+                                Department
+                            </label>
+                            <select id="employeeDepartment" name="employeeDepartment" class="form-input">
+                                <option value="">Select your department</option>
+                            </select>
+                            <span class="error-message" id="employeeDepartmentError"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="employeeJobTitle" class="form-label">
+                                <i class="fas fa-id-badge"></i>
+                                Job Title
+                            </label>
+                            <input type="text" id="employeeJobTitle" name="employeeJobTitle" class="form-input"
+                                placeholder="e.g., Software Developer, HR Coordinator">
+                            <span class="error-message" id="employeeJobTitleError"></span>
+                            <small style="color: var(--gray-600); margin-top: 0.5rem; display: block;">
+                                Enter your position within the department
+                            </small>
+                        </div>
                     </div>
 
                     <!-- Create Company -->
@@ -152,13 +153,8 @@
                             <i class="fas fa-building"></i>
                             Company Name
                         </label>
-                        <input 
-                            type="text" 
-                            id="companyName" 
-                            name="companyName" 
-                            class="form-input" 
-                            placeholder="Enter company name"
-                        >
+                        <input type="text" id="companyName" name="companyName" class="form-input"
+                            placeholder="Enter company name">
                         <span class="error-message" id="companyNameError"></span>
                         <small style="color: var(--gray-600); margin-top: 0.5rem; display: block;">
                             You will become the Super Admin of this company
@@ -169,7 +165,8 @@
                         <label class="checkbox-wrapper">
                             <input type="checkbox" id="agreeTerms" required>
                             <span class="checkmark"></span>
-                            I agree to the <a href="#" class="terms-link">Terms of Service</a>
+                            I agree to the <a href="#" class="terms-link" onclick="openTermsModal(event)">Terms of
+                                Service</a>
                         </label>
                     </div>
 
@@ -180,7 +177,7 @@
                 </form>
 
                 <div class="form-footer">
-                    <p>Already have an account? 
+                    <p>Already have an account?
                         <a href="login.html" class="auth-link">Sign in here</a>
                     </p>
                     <p class="back-home">
@@ -193,6 +190,135 @@
         </div>
     </div>
 
+    <!-- Terms of Service Modal -->
+    <div class="terms-modal-overlay" id="termsModalOverlay" onclick="closeTermsModal()">
+        <div class="terms-modal" onclick="event.stopPropagation()">
+            <div class="terms-modal-header">
+                <h2>Terms of Service</h2>
+                <button class="terms-modal-close" onclick="closeTermsModal()">
+                    ×
+                </button>
+            </div>
+            <div class="terms-modal-content">
+                <div class="terms-content">
+                    <p class="effective-date"><strong>Effective Date:</strong> January 22, 2026</p>
+
+                    <p>These Terms of Service ("Terms") govern the use of the Internal Service Request Application (the
+                        "Application"). The Application is intended for internal use only by authorized users within the
+                        organization.</p>
+
+                    <p>By accessing or using the Application, you agree to be bound by these Terms. If you do not agree,
+                        you must not use the Application.</p>
+
+                    <h3>1. Purpose of the Application</h3>
+                    <p>The Application is designed to allow employees or authorized users to submit, track, and manage
+                        internal service requests (such as IT support, maintenance, or administrative requests).</p>
+                    <p>The Application is not intended for public use or for handling external customer requests.</p>
+
+                    <h3>2. Eligibility and Access</h3>
+                    <ul>
+                        <li>Access is limited to authorized users only.</li>
+                        <li>You must use your assigned credentials and may not share your login details with others.
+                        </li>
+                        <li>You are responsible for all activity that occurs under your account.</li>
+                        <li>The organization reserves the right to suspend or revoke access at any time.</li>
+                    </ul>
+
+                    <h3>3. Acceptable Use</h3>
+                    <p>You agree to use the Application only for legitimate internal business purposes.</p>
+                    <p><strong>You must not:</strong></p>
+                    <ul>
+                        <li>Submit false, misleading, or malicious requests</li>
+                        <li>Attempt to gain unauthorized access to the system or other user accounts</li>
+                        <li>Upload or transmit harmful code, malware, or inappropriate content</li>
+                        <li>Use the Application in a way that disrupts or damages the system or organization</li>
+                    </ul>
+
+                    <h3>4. Data and Privacy</h3>
+                    <ul>
+                        <li>The Application may collect personal and work-related information necessary to process
+                            service requests.</li>
+                        <li>All data is handled in accordance with internal company policies and applicable data
+                            protection laws.</li>
+                        <li>Users should not submit sensitive personal information unless explicitly required.</li>
+                        <li>The organization may monitor and log usage for security, maintenance, and audit purposes.
+                        </li>
+                    </ul>
+
+                    <h3>5. Confidentiality</h3>
+                    <ul>
+                        <li>All information accessed through the Application is considered confidential and must not be
+                            shared with unauthorized parties.</li>
+                        <li>Unauthorized disclosure of internal information may result in disciplinary action.</li>
+                    </ul>
+
+                    <h3>6. Availability and Maintenance</h3>
+                    <ul>
+                        <li>The Application is provided on an "as is" and "as available" basis.</li>
+                        <li>Availability is not guaranteed, and downtime may occur due to maintenance, updates, or
+                            technical issues.</li>
+                        <li>The organization is not liable for delays or losses caused by system unavailability.</li>
+                    </ul>
+
+                    <h3>7. Intellectual Property</h3>
+                    <ul>
+                        <li><strong>OfficeFlow</strong> is the property of <strong>Team CAPS</strong>.</li>
+                        <li>The primary team members responsible for OfficeFlow are:
+                            <ul class="team-list">
+                                <li>Jason Williams</li>
+                                <li>Musa Bolo</li>
+                                <li>Polite Dlamini</li>
+                                <li>Kuhle Mpatheni</li>
+                                <li>Olwethu Madubela</li>
+                            </ul>
+                        </li>
+                        <li>The Application, including its code, design, and content, is the property of Team CAPS.</li>
+                        <li>Users are granted a limited, non-transferable right to use the Application solely for
+                            internal purposes.</li>
+                    </ul>
+
+                    <h3>8. Limitation of Liability</h3>
+                    <p>To the maximum extent permitted by law, the organization is not liable for:</p>
+                    <ul>
+                        <li>Any indirect or consequential damages</li>
+                        <li>Loss of data, productivity, or business interruption arising from use of the Application
+                        </li>
+                    </ul>
+
+                    <h3>9. Termination</h3>
+                    <p>The organization may suspend or terminate access to the Application at any time for:</p>
+                    <ul>
+                        <li>Violation of these Terms</li>
+                        <li>Security concerns</li>
+                        <li>Organizational or operational reasons</li>
+                    </ul>
+                    <p>Upon termination, your right to use the Application immediately ceases.</p>
+
+                    <h3>10. Changes to These Terms</h3>
+                    <ul>
+                        <li>The organization may update these Terms from time to time.</li>
+                        <li>Continued use of the Application after changes are made constitutes acceptance of the
+                            revised Terms.</li>
+                    </ul>
+
+                    <h3>11. Contact</h3>
+                    <p>For questions or concerns regarding these Terms or the Application, contact the system
+                        administrator or relevant internal department.</p>
+
+                    <div class="terms-footer">
+                        <p><strong>By using the Application, you acknowledge that you have read, understood, and agreed
+                                to these Terms of Service.</strong></p>
+                    </div>
+                </div>
+            </div>
+            <div class="terms-modal-actions">
+                <button class="btn-secondary" onclick="closeTermsModal()">Close</button>
+                <button class="btn-primary" onclick="acceptTerms()">I Accept</button>
+            </div>
+        </div>
+    </div>
+
     <script type="module" defer src="../scripts/script.js"></script>
 </body>
+
 </html>

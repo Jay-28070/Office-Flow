@@ -295,13 +295,24 @@ app.post('/api/promote-to-admin', authenticateFirebaseToken, requireSuperAdmin, 
 // Get company settings (available to any authenticated user)
 app.get('/api/company/settings', authenticateFirebaseToken, async (req, res) => {
     try {
+        console.log('=== COMPANY SETTINGS DEBUG ===');
+        console.log('User ID:', req.user.userId);
+        console.log('Company ID:', req.user.companyId);
+
         const companyDoc = await db.collection('companies').doc(req.user.companyId).get();
 
         if (!companyDoc.exists) {
+            console.log('Company document not found');
             return res.status(404).json({ message: 'Company not found', success: false });
         }
 
         const companyData = companyDoc.data();
+        console.log('Company data found:', {
+            name: companyData.name,
+            hasSettings: !!companyData.settings,
+            departments: companyData.settings?.departments?.length || 0
+        });
+
         const settings = {
             annualLeaveBalance: companyData.settings?.annualLeaveBalance || 0,
             sickLeaveBalance: companyData.settings?.sickLeaveBalance || 0,
@@ -322,7 +333,11 @@ app.get('/api/company/settings', authenticateFirebaseToken, async (req, res) => 
         });
     } catch (error) {
         console.error('Error fetching company settings:', error);
-        res.status(500).json({ message: 'Server error', success: false });
+        res.status(500).json({
+            message: 'Server error',
+            success: false,
+            error: error.message
+        });
     }
 });
 
@@ -411,12 +426,16 @@ app.put('/api/users/:userId/role', authenticateFirebaseToken, requireSuperAdmin,
         const { userId } = req.params;
         const { role, jobTitle, department } = req.body;
 
-        if (!['user', 'admin'].includes(role)) {
-            return res.status(400).json({ message: 'Invalid role', success: false });
+        console.log('Role update request:', { userId, role, jobTitle, department });
+
+        if (!['user', 'admin', 'superadmin'].includes(role)) {
+            console.log('Invalid role provided:', role);
+            return res.status(400).json({ message: 'Invalid role. Must be user, admin, or superadmin', success: false });
         }
 
         const userDoc = await db.collection('users').doc(userId).get();
         if (!userDoc.exists) {
+            console.log('User not found:', userId);
             return res.status(404).json({ message: 'User not found', success: false });
         }
 
@@ -424,8 +443,10 @@ app.put('/api/users/:userId/role', authenticateFirebaseToken, requireSuperAdmin,
         if (jobTitle !== undefined) updateData.jobTitle = jobTitle;
         if (department !== undefined) updateData.department = department;
 
+        console.log('Updating user with data:', updateData);
         await db.collection('users').doc(userId).update(updateData);
 
+        console.log('User role updated successfully');
         res.status(200).json({ message: 'User role updated successfully', success: true });
     } catch (error) {
         console.error('Error updating user role:', error);
@@ -473,6 +494,128 @@ app.put('/api/users/:userId/profile', authenticateFirebaseToken, async (req, res
     }
 });
 
+// Update user last login time
+app.post('/api/users/:userId/login', authenticateFirebaseToken, async (req, res) => {
+    try {
+        const { userId } = req.params;
+
+        // Users can only update their own login time
+        if (req.user.userId !== userId) {
+            return res.status(403).json({ message: 'Unauthorized', success: false });
+        }
+
+        await db.collection('users').doc(userId).update({
+            lastLoginAt: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        res.status(200).json({ message: 'Login time updated', success: true });
+    } catch (error) {
+        console.error('Error updating login time:', error);
+        res.status(500).json({ message: 'Server error', success: false });
+    }
+});
+
+// Get request status notifications for user
+app.get('/api/users/:userId/notifications', authenticateFirebaseToken, async (req, res) => {
+    try {
+        console.log('=== NOTIFICATIONS API DEBUG ===');
+        const { userId } = req.params;
+        console.log('Requested user ID:', userId);
+        console.log('Authenticated user ID:', req.user.userId);
+
+        // Users can only get their own notifications
+        if (req.user.userId !== userId) {
+            console.log('Unauthorized access attempt');
+            return res.status(403).json({ message: 'Unauthorized', success: false });
+        }
+
+        // Get user's last login time
+        const userDoc = await db.collection('users').doc(userId).get();
+        if (!userDoc.exists) {
+            console.log('User not found in database');
+            return res.status(404).json({ message: 'User not found', success: false });
+        }
+
+        const userData = userDoc.data();
+        const lastLoginAt = userData.lastLoginAt;
+        console.log('User last login:', lastLoginAt);
+
+        if (!lastLoginAt) {
+            // First time login, no notifications
+            console.log('First time login, no notifications');
+            return res.status(200).json({
+                success: true,
+                notifications: [],
+                message: 'Welcome! This is your first login.'
+            });
+        }
+
+        // Get all user's requests
+        console.log('Fetching user requests...');
+        const requestsSnapshot = await db.collection('requests')
+            .where('userId', '==', userId)
+            .get();
+
+        console.log('Found requests:', requestsSnapshot.docs.length);
+        const notifications = [];
+
+        requestsSnapshot.docs.forEach(doc => {
+            const request = doc.data();
+            console.log(`Checking request ${doc.id}:`, {
+                title: request.title,
+                status: request.status,
+                lastUpdated: request.lastUpdated,
+                lastLoginSeconds: lastLoginAt.seconds,
+                lastUpdatedSeconds: request.lastUpdated?.seconds
+            });
+
+            // Check if request was updated after last login
+            const lastUpdated = request.lastUpdated;
+            if (lastUpdated && lastUpdated.seconds > lastLoginAt.seconds) {
+                console.log('Request updated after last login');
+                // Check if status changed to Completed or Rejected
+                if (request.status === 'Completed' || request.status === 'Rejected') {
+                    console.log('Adding notification for status change');
+                    notifications.push({
+                        id: doc.id,
+                        title: request.title,
+                        category: request.category,
+                        status: request.status,
+                        updatedAt: lastUpdated,
+                        message: request.status === 'Completed'
+                            ? `Your ${request.category} request "${request.title}" has been approved!`
+                            : `Your ${request.category} request "${request.title}" has been rejected.`,
+                        type: request.status === 'Completed' ? 'success' : 'warning'
+                    });
+                }
+            }
+        });
+
+        console.log('Total notifications:', notifications.length);
+
+        // Sort notifications by update time (newest first)
+        notifications.sort((a, b) => b.updatedAt.seconds - a.updatedAt.seconds);
+
+        res.status(200).json({
+            success: true,
+            notifications,
+            count: notifications.length,
+            message: notifications.length > 0
+                ? `You have ${notifications.length} new notification${notifications.length > 1 ? 's' : ''}`
+                : 'No new notifications',
+            debug: {
+                userId,
+                lastLoginAt: lastLoginAt.seconds,
+                totalRequests: requestsSnapshot.docs.length,
+                notificationCount: notifications.length
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching notifications:', error);
+        res.status(500).json({ message: 'Server error', success: false });
+    }
+});
+
 // ===== REQUEST ROUTING HELPER =====
 
 /**
@@ -485,6 +628,8 @@ app.put('/api/users/:userId/profile', authenticateFirebaseToken, async (req, res
  */
 async function routeRequestToAdmin(category, companyId) {
     try {
+        console.log(`Routing request - Category: ${category}, CompanyId: ${companyId}`);
+
         // Map categories to departments
         const categoryToDepartment = {
             'HR': 'HR',
@@ -494,6 +639,7 @@ async function routeRequestToAdmin(category, companyId) {
         };
 
         const targetDepartment = categoryToDepartment[category];
+        console.log(`Target department for category ${category}: ${targetDepartment}`);
 
         if (targetDepartment) {
             // Find admin for this department
@@ -505,7 +651,11 @@ async function routeRequestToAdmin(category, companyId) {
                 .get();
 
             if (!adminSnapshot.empty) {
-                return adminSnapshot.docs[0].id;
+                const adminId = adminSnapshot.docs[0].id;
+                console.log(`Found department admin for ${targetDepartment}: ${adminId}`);
+                return adminId;
+            } else {
+                console.log(`No admin found for department: ${targetDepartment}`);
             }
         }
 
@@ -517,9 +667,12 @@ async function routeRequestToAdmin(category, companyId) {
             .get();
 
         if (!superAdminSnapshot.empty) {
-            return superAdminSnapshot.docs[0].id;
+            const superAdminId = superAdminSnapshot.docs[0].id;
+            console.log(`Routing to super admin as fallback: ${superAdminId}`);
+            return superAdminId;
         }
 
+        console.log('No super admin found - this should not happen');
         return null;
     } catch (error) {
         console.error('Error routing request:', error);
@@ -543,6 +696,7 @@ app.post('/api/leave-requests', authenticateFirebaseToken, async (req, res) => {
 
         // Route request to appropriate admin (HR for leave requests)
         const assignedAdminId = await routeRequestToAdmin('Leave', req.user.companyId);
+        console.log(`Leave request routed to admin ID: ${assignedAdminId}`);
 
         const newRequest = {
             userId: req.user.userId,
@@ -674,12 +828,10 @@ app.get('/api/leave-requests', authenticateFirebaseToken, async (req, res) => {
         if (req.user.role === 'admin' || req.user.role === 'superadmin') {
             requestsSnapshot = await db.collection('leaveRequests')
                 .where('companyId', '==', req.user.companyId)
-                .orderBy('dateSubmitted', 'desc')
                 .get();
         } else {
             requestsSnapshot = await db.collection('leaveRequests')
                 .where('userId', '==', req.user.userId)
-                .orderBy('dateSubmitted', 'desc')
                 .get();
         }
 
@@ -687,6 +839,13 @@ app.get('/api/leave-requests', authenticateFirebaseToken, async (req, res) => {
             id: doc.id,
             ...doc.data()
         }));
+
+        // Sort by dateSubmitted in JavaScript (newest first)
+        requests.sort((a, b) => {
+            const dateA = a.dateSubmitted?.seconds || 0;
+            const dateB = b.dateSubmitted?.seconds || 0;
+            return dateB - dateA;
+        });
 
         res.status(200).json({ success: true, requests });
     } catch (error) {
@@ -701,7 +860,7 @@ app.use(express.static(path.join(__dirname, '../frontend')));
 
 //Start server
 app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`\nServer running on http://localhost:${PORT}\n`);
 });
 
 
@@ -729,6 +888,430 @@ app.delete('/api/users/:userId', authenticateFirebaseToken, requireSuperAdmin, a
         res.status(200).json({ message: 'User deleted successfully', success: true });
     } catch (error) {
         console.error('Error deleting user:', error);
+        res.status(500).json({ message: 'Server error', success: false });
+    }
+});
+// ===== GENERAL REQUESTS API =====
+
+// Create a general request (users) - routes to appropriate admin or super admin
+app.post('/api/requests', authenticateFirebaseToken, async (req, res) => {
+    try {
+        const { title, description, priority, category, type, leave, deduct } = req.body;
+
+        if (!title || !description || !category) {
+            return res.status(400).json({
+                message: 'Title, description, and category are required',
+                success: false
+            });
+        }
+
+        const userDoc = await db.collection('users').doc(req.user.userId).get();
+        if (!userDoc.exists) {
+            return res.status(404).json({ message: 'User not found', success: false });
+        }
+
+        const userData = userDoc.data();
+
+        // Route request to appropriate admin based on category
+        const assignedAdminId = await routeRequestToAdmin(category, req.user.companyId);
+        console.log(`Request routed to admin ID: ${assignedAdminId}`);
+
+        const newRequest = {
+            userId: req.user.userId,
+            userName: userData.fullName,
+            userEmail: userData.email,
+            userDepartment: userData.department || 'Unknown',
+            companyId: req.user.companyId,
+            title: title.trim(),
+            description: description.trim(),
+            priority: priority || 'Medium',
+            category: category,
+            type: type || 'General',
+            status: 'Pending',
+            assignedTo: assignedAdminId || null,
+            dateSubmitted: admin.firestore.FieldValue.serverTimestamp(),
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+        };
+
+        // Add leave-specific fields if this is a leave request
+        if (type === 'Leave' && leave) {
+            newRequest.leave = leave;
+            newRequest.deduct = !!deduct;
+        }
+
+        const docRef = await db.collection('requests').add(newRequest);
+
+        // Determine routing message
+        let routingMessage = 'Request submitted successfully';
+        if (assignedAdminId) {
+            // Check if assigned to department admin or super admin
+            const assignedAdminDoc = await db.collection('users').doc(assignedAdminId).get();
+            const assignedAdminData = assignedAdminDoc.data();
+
+            if (assignedAdminData.role === 'superadmin') {
+                routingMessage = 'Request submitted and routed to Super Admin (no department admin available)';
+            } else {
+                routingMessage = `Request submitted and routed to ${assignedAdminData.department} department admin`;
+            }
+        }
+
+        res.status(201).json({
+            success: true,
+            request: { id: docRef.id, ...newRequest },
+            message: routingMessage
+        });
+    } catch (error) {
+        console.error('Error creating request:', error);
+        res.status(500).json({ message: 'Server error', success: false });
+    }
+});
+
+// Get requests (users get their requests; admins get requests assigned to them or their department)
+app.get('/api/requests', authenticateFirebaseToken, async (req, res) => {
+    try {
+        let requestsSnapshot;
+
+        if (req.user.role === 'superadmin') {
+            // Super admin sees all requests in the company
+            requestsSnapshot = await db.collection('requests')
+                .where('companyId', '==', req.user.companyId)
+                .get();
+        } else if (req.user.role === 'admin') {
+            // Admin sees requests assigned to them
+            requestsSnapshot = await db.collection('requests')
+                .where('companyId', '==', req.user.companyId)
+                .where('assignedTo', '==', req.user.userId)
+                .get();
+        } else {
+            // Regular users see only their own requests
+            requestsSnapshot = await db.collection('requests')
+                .where('userId', '==', req.user.userId)
+                .get();
+        }
+
+        const requests = requestsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        // Sort by dateSubmitted in JavaScript (newest first)
+        requests.sort((a, b) => {
+            const dateA = a.dateSubmitted?.seconds || 0;
+            const dateB = b.dateSubmitted?.seconds || 0;
+            return dateB - dateA;
+        });
+
+        res.status(200).json({ success: true, requests });
+    } catch (error) {
+        console.error('Error fetching requests:', error);
+        res.status(500).json({ message: 'Server error', success: false });
+    }
+});
+
+// Test endpoint to simulate request status change (for testing notifications)
+app.post('/api/debug/simulate-status-change', authenticateFirebaseToken, async (req, res) => {
+    try {
+        const { requestId, status } = req.body;
+
+        if (!requestId || !status) {
+            return res.status(400).json({
+                message: 'requestId and status are required',
+                success: false
+            });
+        }
+
+        if (!['Completed', 'Rejected'].includes(status)) {
+            return res.status(400).json({
+                message: 'Status must be Completed or Rejected',
+                success: false
+            });
+        }
+
+        // Update the request status
+        await db.collection('requests').doc(requestId).update({
+            status: status,
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+        });
+
+        res.status(200).json({
+            success: true,
+            message: `Request ${requestId} status changed to ${status}`,
+            requestId,
+            status
+        });
+    } catch (error) {
+        console.error('Error simulating status change:', error);
+        res.status(500).json({ message: 'Server error', success: false });
+    }
+});
+
+// Clean up test/fake requests (Super Admin only)
+app.delete('/api/debug/cleanup-test-requests', authenticateFirebaseToken, requireSuperAdmin, async (req, res) => {
+    try {
+        console.log('Cleaning up test requests...');
+
+        // Get all requests that look like test requests
+        const requestsSnapshot = await db.collection('requests')
+            .where('companyId', '==', req.user.companyId)
+            .get();
+
+        let deletedCount = 0;
+        const batch = db.batch();
+
+        requestsSnapshot.docs.forEach(doc => {
+            const request = doc.data();
+            // Delete requests that have test-like titles or are from debug endpoints
+            if (request.title && (
+                request.title.toLowerCase().includes('test') ||
+                request.title.toLowerCase().includes('debug') ||
+                request.title.toLowerCase().includes('sample') ||
+                request.description?.toLowerCase().includes('test request')
+            )) {
+                batch.delete(doc.ref);
+                deletedCount++;
+                console.log('Marking for deletion:', request.title);
+            }
+        });
+
+        if (deletedCount > 0) {
+            await batch.commit();
+            console.log(`Deleted ${deletedCount} test requests`);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Cleaned up ${deletedCount} test requests`,
+            deletedCount
+        });
+    } catch (error) {
+        console.error('Error cleaning up test requests:', error);
+        res.status(500).json({ message: 'Server error', success: false });
+    }
+});
+
+// Test endpoint to create a sample request (temporary for testing)
+app.post('/api/debug/create-test-request', authenticateFirebaseToken, async (req, res) => {
+    try {
+        const userDoc = await db.collection('users').doc(req.user.userId).get();
+        if (!userDoc.exists) {
+            return res.status(404).json({ message: 'User not found', success: false });
+        }
+
+        const userData = userDoc.data();
+
+        // Create a test request for a department that likely has no admin
+        const testCategories = ['HR', 'IT', 'Maintenance'];
+        const randomCategory = testCategories[Math.floor(Math.random() * testCategories.length)];
+
+        // Route request to appropriate admin
+        const assignedAdminId = await routeRequestToAdmin(randomCategory, req.user.companyId);
+        console.log(`Test request routed to admin ID: ${assignedAdminId}`);
+
+        const testRequest = {
+            userId: req.user.userId,
+            userName: userData.fullName,
+            userEmail: userData.email,
+            userDepartment: userData.department || 'Test Department',
+            companyId: req.user.companyId,
+            title: `Test ${randomCategory} Request`,
+            description: `This is a test request for ${randomCategory} department to verify unassigned request routing.`,
+            priority: 'Medium',
+            category: randomCategory,
+            type: 'General',
+            status: 'Pending',
+            assignedTo: assignedAdminId || null,
+            dateSubmitted: admin.firestore.FieldValue.serverTimestamp(),
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+        };
+
+        const docRef = await db.collection('requests').add(testRequest);
+
+        res.status(201).json({
+            success: true,
+            request: { id: docRef.id, ...testRequest },
+            message: `Test request created and ${assignedAdminId ? 'assigned to admin' : 'marked as unassigned'}`
+        });
+    } catch (error) {
+        console.error('Error creating test request:', error);
+        res.status(500).json({ message: 'Server error', success: false });
+    }
+});
+
+// Test endpoint to check requests (temporary for debugging)
+app.get('/api/debug/requests', authenticateFirebaseToken, requireSuperAdmin, async (req, res) => {
+    try {
+        const requestsSnapshot = await db.collection('requests')
+            .where('companyId', '==', req.user.companyId)
+            .get();
+
+        const allRequests = requestsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+
+        res.status(200).json({
+            success: true,
+            totalRequests: allRequests.length,
+            requests: allRequests.map(req => ({
+                id: req.id,
+                title: req.title,
+                category: req.category,
+                status: req.status,
+                assignedTo: req.assignedTo,
+                userId: req.userId,
+                userName: req.userName
+            }))
+        });
+    } catch (error) {
+        console.error('Error fetching debug requests:', error);
+        res.status(500).json({ message: 'Server error', success: false });
+    }
+});
+
+// Get unassigned requests (Super Admin only) - requests that need super admin attention
+app.get('/api/requests/unassigned', authenticateFirebaseToken, requireSuperAdmin, async (req, res) => {
+    try {
+        console.log('=== UNASSIGNED REQUESTS DEBUG ===');
+        console.log('User ID:', req.user.userId);
+        console.log('Company ID:', req.user.companyId);
+        console.log('User Role:', req.user.role);
+
+        // Get all requests in the company first (simple query to avoid index issues)
+        const requestsSnapshot = await db.collection('requests')
+            .where('companyId', '==', req.user.companyId)
+            .get();
+
+        console.log('Found total requests:', requestsSnapshot.docs.length);
+
+        const allRequests = requestsSnapshot.docs.map(doc => {
+            const data = doc.data();
+            return {
+                id: doc.id,
+                ...data
+            };
+        });
+
+        // Filter for pending requests assigned to super admin or null (unassigned)
+        const unassignedRequests = allRequests.filter(request => {
+            const isPending = request.status === 'Pending';
+            const isUnassigned = request.assignedTo === req.user.userId || request.assignedTo === null;
+
+            console.log(`Request ${request.id}:`, {
+                title: request.title,
+                assignedTo: request.assignedTo,
+                status: request.status,
+                category: request.category,
+                isPending,
+                isUnassigned
+            });
+
+            return isPending && isUnassigned;
+        });
+
+        console.log('Unassigned requests found:', unassignedRequests.length);
+
+        // Sort by dateSubmitted if it exists, otherwise by creation order
+        unassignedRequests.sort((a, b) => {
+            const dateA = a.dateSubmitted?.seconds || 0;
+            const dateB = b.dateSubmitted?.seconds || 0;
+            return dateB - dateA; // Newest first
+        });
+
+        res.status(200).json({
+            success: true,
+            requests: unassignedRequests,
+            message: `Found ${unassignedRequests.length} unassigned requests`,
+            debug: {
+                totalRequests: allRequests.length,
+                totalPending: allRequests.filter(r => r.status === 'Pending').length,
+                superAdminId: req.user.userId,
+                companyId: req.user.companyId
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching unassigned requests:', error);
+        res.status(500).json({
+            message: 'Server error',
+            success: false,
+            error: error.message
+        });
+    }
+});
+
+// Update request status (admin/superadmin)
+app.put('/api/requests/:requestId/status', authenticateFirebaseToken, requireAdmin, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+        const { status, comments } = req.body;
+
+        if (!['Pending', 'In Progress', 'Completed', 'Rejected'].includes(status)) {
+            return res.status(400).json({ message: 'Invalid status', success: false });
+        }
+
+        const requestDoc = await db.collection('requests').doc(requestId).get();
+        if (!requestDoc.exists) {
+            return res.status(404).json({ message: 'Request not found', success: false });
+        }
+
+        const requestData = requestDoc.data();
+        if (requestData.companyId !== req.user.companyId) {
+            return res.status(403).json({ message: 'Unauthorized', success: false });
+        }
+
+        // Check if admin is authorized to update this request
+        if (req.user.role === 'admin' && requestData.assignedTo !== req.user.userId) {
+            return res.status(403).json({ message: 'Not assigned to you', success: false });
+        }
+
+        const updateData = {
+            status: status,
+            lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+        };
+
+        if (comments) {
+            updateData.adminComments = comments;
+        }
+
+        // Add status-specific timestamps
+        if (status === 'Completed') {
+            updateData.completedAt = admin.firestore.FieldValue.serverTimestamp();
+        } else if (status === 'Rejected') {
+            updateData.rejectedAt = admin.firestore.FieldValue.serverTimestamp();
+        } else if (status === 'In Progress') {
+            updateData.startedAt = admin.firestore.FieldValue.serverTimestamp();
+        }
+
+        // Handle leave request approval/rejection with balance deduction
+        if (requestData.type === 'Leave' && status === 'Completed' && requestData.deduct && requestData.leave?.days) {
+            const userDoc = await db.collection('users').doc(requestData.userId).get();
+            if (userDoc.exists) {
+                const userData = userDoc.data();
+                const days = Number(requestData.leave.days) || 0;
+                const leaveType = (requestData.leave.leaveType || 'annual').toLowerCase();
+
+                const leaveBalance = userData.leaveBalance || {};
+                if (leaveBalance.annual === undefined) leaveBalance.annual = 0;
+                if (leaveBalance.sick === undefined) leaveBalance.sick = 0;
+                if (leaveBalance.personal === undefined) leaveBalance.personal = 0;
+                if (leaveBalance.emergency === undefined) leaveBalance.emergency = 0;
+
+                if (leaveType === 'sick') leaveBalance.sick = Math.max(0, leaveBalance.sick - days);
+                else if (leaveType === 'personal') leaveBalance.personal = Math.max(0, leaveBalance.personal - days);
+                else if (leaveType === 'emergency') leaveBalance.emergency = Math.max(0, leaveBalance.emergency - days);
+                else leaveBalance.annual = Math.max(0, leaveBalance.annual - days);
+
+                await db.collection('users').doc(requestData.userId).update({ leaveBalance });
+            }
+        }
+
+        await db.collection('requests').doc(requestId).update(updateData);
+
+        res.status(200).json({
+            success: true,
+            message: `Request ${status.toLowerCase()} successfully`
+        });
+    } catch (error) {
+        console.error('Error updating request status:', error);
         res.status(500).json({ message: 'Server error', success: false });
     }
 });

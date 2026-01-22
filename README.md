@@ -6,18 +6,18 @@ Built with **HTML, CSS, JavaScript, Node.js, Express**, and **Firebase** for aut
 
 ---
 
-## 🔥 Firebase Authentication Integrated!
+##  Firebase Authentication Integrated!
 
 This project now uses **Firebase Authentication** for secure user management:
 
-- ✅ **Password Encryption**: Automatic bcrypt hashing by Firebase
-- ✅ **User Storage**: Cloud-based Firestore database
-- ✅ **Login/Sessions**: Firebase Authentication with secure tokens
-- ✅ **Security Tokens**: JWT tokens signed by Google
-- ✅ **Password Reset**: Built-in password recovery
-- ✅ **Cloud Backup**: Automatic data backup and scaling
+-  **Password Encryption**: Automatic bcrypt hashing by Firebase
+-  **User Storage**: Cloud-based Firestore database
+-  **Login/Sessions**: Firebase Authentication with secure tokens
+-  **Security Tokens**: JWT tokens signed by Google
+-  **Password Reset**: Built-in password recovery
+-  **Cloud Backup**: Automatic data backup and scaling
 
-### 🚀 Quick Setup
+###  Quick Setup
 
 1. **Read the setup guide**: See `QUICK_START.md` for a quick checklist
 2. **Detailed instructions**: See `FIREBASE_SETUP_GUIDE.md` for step-by-step setup
@@ -163,14 +163,14 @@ officeFlow/
 
 ## Security Features
 
-- 🔒 Passwords encrypted with bcrypt (handled by Firebase)
-- 🔑 JWT tokens signed by Google
-- 🛡️ Firestore security rules for data access
-- 👥 Role-based access control (User, Admin, Super Admin)
-- 🔄 Automatic token refresh
-- ⏱️ Token expiration (1 hour)
-- 🚫 CORS protection
-- 📝 Audit logging ready
+-  Passwords encrypted with bcrypt (handled by Firebase)
+-  JWT tokens signed by Google
+-  Firestore security rules for data access
+-  Role-based access control (User, Admin, Super Admin)
+-  Automatic token refresh
+-  Token expiration (1 hour)
+-  CORS protection
+-  Audit logging ready
 
 ---
 

@@ -24,6 +24,64 @@
         <div class="loading-text">Loading dashboard...</div>
     </div>
 
+    <!-- Top Header -->
+    <header class="top-header">
+        <div class="header-left">
+            <div class="header-logo">
+                <i class="fas fa-building"></i>
+                <span>officeFlow</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="super-admin-badge">
+                <i class="fas fa-crown"></i>
+                <span>Super Admin</span>
+            </div>
+            <div class="user-profile" onclick="toggleProfileMenu()">
+                <i class="fas fa-user-circle"></i>
+                <span id="userName">Loading...</span>
+                <i class="fas fa-chevron-down"></i>
+
+                <div class="profile-dropdown" id="profileDropdown">
+                    <!-- Compact settings dropdown (appearance + quick actions) -->
+                    <div class="sa-settings-compact">
+                        <div class="sa-settings-header">
+                            <strong>Settings</strong>
+                            <small>Quick actions</small>
+                        </div>
+
+                        <div class="sa-settings-section">
+                            <div class="sa-settings-label">Theme</div>
+                            <div class="sa-theme-options">
+                                <label>
+                                    <input type="radio" name="sa-theme" value="light" checked>
+                                    Light
+                                </label>
+                                <label>
+                                    <input type="radio" name="sa-theme" value="dark">
+                                    Dark
+                                </label>
+                                <label>
+                                    <input type="radio" name="sa-theme" value="auto">
+                                    Auto
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="sa-settings-section">
+                            <button class="btn-small" id="saGoToProfile">Profile Settings</button>
+                            <button class="btn-small" id="saGoToSettings">Company Settings</button>
+                        </div>
+
+                        <div class="sa-settings-section sa-logout">
+                            <button class="btn-small btn-danger" id="saLogoutBtn">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
     <div class="dashboard-container">
         <!-- Mobile Menu Button -->
         <button class="mobile-menu-btn" id="mobileMenuBtn" onclick="toggleMobileMenu()">
@@ -35,14 +93,6 @@
 
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar">
-            <div class="logo">
-                <i class="fas fa-building"></i>
-                <span>officeFlow</span>
-                <button class="sidebar-close-btn" onclick="closeMobileMenu()">
-                    ×
-                </button>
-            </div>
-
             <nav class="nav-menu">
                 <a href="#" class="nav-item" onclick="showTab('dashboard', event)">
                     <i class="fas fa-home"></i>
@@ -73,54 +123,6 @@
                 <div>
                     <h1>Super Admin Dashboard</h1>
                     <p>Manage users, admins, and admin requests</p>
-                </div>
-                <div class="header-actions">
-                    <div class="super-admin-badge">
-                        <i class="fas fa-crown"></i>
-                        <span>Super Admin</span>
-                    </div>
-                    <div class="user-profile" onclick="toggleProfileMenu()">
-                        <i class="fas fa-user-circle"></i>
-                        <span id="userName">Loading...</span>
-                        <i class="fas fa-chevron-down"></i>
-
-                        <div class="profile-dropdown" id="profileDropdown">
-                            <!-- Compact settings dropdown (appearance + quick actions) -->
-                            <div class="sa-settings-compact">
-                                <div class="sa-settings-header">
-                                    <strong>Settings</strong>
-                                    <small>Quick actions</small>
-                                </div>
-
-                                <div class="sa-settings-section">
-                                    <div class="sa-settings-label">Theme</div>
-                                    <div class="sa-theme-options">
-                                        <label>
-                                            <input type="radio" name="sa-theme" value="light" checked>
-                                            Light
-                                        </label>
-                                        <label>
-                                            <input type="radio" name="sa-theme" value="dark">
-                                            Dark
-                                        </label>
-                                        <label>
-                                            <input type="radio" name="sa-theme" value="auto">
-                                            Auto
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="sa-settings-section">
-                                    <button class="btn-small" id="saGoToProfile">Profile Settings</button>
-                                    <button class="btn-small" id="saGoToSettings">Company Settings</button>
-                                </div>
-
-                                <div class="sa-settings-section sa-logout">
-                                    <button class="btn-small btn-danger" id="saLogoutBtn">Logout</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </header>
 

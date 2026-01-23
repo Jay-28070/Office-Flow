@@ -10,6 +10,11 @@
 const isProduction = (window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1')
     && !window.FORCE_LOCALHOST;  // Override for presentations
 
+console.log('🔍 Environment Detection Debug:');
+console.log('- Current hostname:', window.location.hostname);
+console.log('- Is production?', isProduction);
+console.log('- FORCE_LOCALHOST?', window.FORCE_LOCALHOST);
+
 // Configuration
 const config = {
     // Replace 'your-render-app-name' with your actual Render app name
@@ -33,6 +38,3 @@ window.APP_CONFIG = config;
 // Log environment info
 console.log(`🌍 Environment: ${config.ENVIRONMENT}`);
 console.log(`🔗 API Base URL: ${config.API_BASE_URL}`);
-
-// Export for ES6 modules
-export default config;

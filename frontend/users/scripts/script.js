@@ -14,7 +14,9 @@ import {
 } from './firebase-config.js';
 
 // API Base URL - now uses environment detection
-const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || 'http://localhost:3000';
+function getApiBaseUrl() {
+    return window.APP_CONFIG?.API_BASE_URL || 'http://localhost:3000';
+}
 
 // ===== PASSWORD TOGGLE FUNCTIONALITY =====
 
@@ -85,7 +87,7 @@ function initFormListeners() {
 
             try {
                 // Verify company code and get departments
-                const response = await fetch(`${API_BASE_URL}/api/verify-company-code`, {
+                const response = await fetch(`${getApiBaseUrl()}/api/verify-company-code`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ companyCode: code })
@@ -179,7 +181,7 @@ function initFormListeners() {
 
                 // Fetch user data from backend
                 console.log('Fetching user data from backend...');
-                const response = await fetch(`${API_BASE_URL}/api/auth/user-data`, {
+                const response = await fetch(`${getApiBaseUrl()}/api/auth/user-data`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${idToken}`,
@@ -366,7 +368,7 @@ function initFormListeners() {
                     requestBody.companyName = companyName;
                 }
 
-                const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
+                const response = await fetch(`${getApiBaseUrl()}/api/auth/register`, {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${idToken}`,

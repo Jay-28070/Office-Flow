@@ -182,9 +182,26 @@ function initFormListeners() {
                 // Fetch user data from backend
                 console.log('Fetching user data from backend...');
 
+                // First, test if backend is responding at all
+                try {
+                    console.log('Testing backend connectivity...');
+                    const testResponse = await fetch(`${getApiBaseUrl()}/api/test`, {
+                        method: 'GET',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    if (!testResponse.ok) {
+                        throw new Error('Backend test failed');
+                    }
+                    console.log('✅ Backend is responding');
+                } catch (testError) {
+                    console.error('❌ Backend connectivity test failed:', testError);
+                    throw new Error('Backend server is not responding. Please try again later.');
+                }
+
                 // Add timeout to prevent infinite hanging
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+                const timeoutId = setTimeout(() => controller.abort(), 15000); // Reduced to 15 seconds
 
                 const response = await fetch(`${getApiBaseUrl()}/api/auth/user-data`, {
                     method: 'GET',

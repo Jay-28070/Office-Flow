@@ -31,6 +31,24 @@ app.use(express.json());
 // Auth routes (MUST come before static files)
 app.use('/api/auth', authRoutes);
 
+// Simple health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({
+        status: 'OK',
+        message: 'Backend is running',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// Test endpoint to check if server is responding
+app.get('/api/test', (req, res) => {
+    res.status(200).json({
+        success: true,
+        message: 'API is working',
+        timestamp: new Date().toISOString()
+    });
+});
+
 // Verify company code and get departments (public endpoint for registration)
 app.post('/api/verify-company-code', async (req, res) => {
     try {

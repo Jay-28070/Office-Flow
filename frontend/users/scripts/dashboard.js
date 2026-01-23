@@ -90,7 +90,7 @@ async function updateLastLogin() {
             return;
         }
 
-        await fetch(`http://localhost:3000/api/users/${user.id}/login`, {
+        await fetch(`${getApiUrl()}/api/users/${user.id}/login`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -119,7 +119,7 @@ async function checkNotifications() {
         }
 
         console.log('Fetching notifications from API...');
-        const response = await fetch(`http://localhost:3000/api/users/${user.id}/notifications`, {
+        const response = await fetch(`${getApiUrl()}/api/users/${user.id}/notifications`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -486,6 +486,13 @@ fadeOutStyle.textContent = `
 document.head.appendChild(fadeOutStyle);
 
 // ===== UTILITY FUNCTIONS =====
+
+/**
+ * Get API base URL based on environment
+ */
+function getApiUrl() {
+    return window.APP_CONFIG?.API_BASE_URL || 'http://localhost:3000';
+}
 
 /**
  * Generate unique ID for new requests

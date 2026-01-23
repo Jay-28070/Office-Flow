@@ -10,10 +10,23 @@ const authRoutes = require('./routes/auth');
 //Create instance of server
 const app = express();
 
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 //Middleware
-app.use(cors());
+app.use(cors({
+    origin: [
+        'https://yourusername.github.io', // Replace with your actual GitHub Pages URL
+        'http://localhost:3000',
+        'http://localhost:5500',  // Live Server default
+        'http://localhost:8000',  // Python server
+        'http://localhost:8080',  // Common dev server
+        'http://127.0.0.1:3000',
+        'http://127.0.0.1:5500',
+        'http://127.0.0.1:8000'
+        // Add your Render frontend URL here after deployment
+    ],
+    credentials: true
+}));
 app.use(express.json());
 
 // Auth routes (MUST come before static files)

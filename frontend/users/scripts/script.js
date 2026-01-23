@@ -13,8 +13,8 @@ import {
     updateProfile
 } from './firebase-config.js';
 
-// API Base URL
-const API_BASE_URL = 'http://localhost:3000';
+// API Base URL - now uses environment detection
+const API_BASE_URL = window.APP_CONFIG?.API_BASE_URL || 'http://localhost:3000';
 
 // ===== PASSWORD TOGGLE FUNCTIONALITY =====
 

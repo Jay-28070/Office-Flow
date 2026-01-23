@@ -1,6 +1,11 @@
 let companySettings = null;
 let allUsers = [];
 
+// API Base URL - uses environment detection
+function getApiBaseUrl() {
+    return window.APP_CONFIG?.API_BASE_URL || '${getApiBaseUrl()}';
+}
+
 function getToken() {
     return localStorage.getItem('authToken');
 }
@@ -47,7 +52,7 @@ async function loadData() {
     if (user.role === 'superadmin' && user.jobTitle && user.jobTitle !== '') {
         // Update the super admin to have empty job title
         try {
-            await fetch(`http://localhost:3000/api/users/${user.id}/role`, {
+            await fetch(`${getApiBaseUrl()}/api/users/${user.id}/role`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -86,7 +91,7 @@ async function loadData() {
 async function loadCompanySettings() {
     try {
         console.log('Loading company settings...');
-        const response = await fetch('http://localhost:3000/api/company/settings', {
+        const response = await fetch('${getApiBaseUrl()}/api/company/settings', {
             headers: { 'Authorization': `Bearer ${getToken()}` }
         });
 
@@ -130,7 +135,7 @@ async function loadCompanySettings() {
 }
 
 async function loadUsers() {
-    const response = await fetch('http://localhost:3000/api/company/users', {
+    const response = await fetch(`${getApiBaseUrl()}/api/company/users`, {
         headers: { 'Authorization': `Bearer ${getToken()}` }
     });
     const data = await response.json();
@@ -318,7 +323,7 @@ function displayUsers() {
 }
 
 async function loadAdminRequests() {
-    const response = await fetch('http://localhost:3000/api/admin-requests', {
+    const response = await fetch('${getApiBaseUrl()}/api/admin-requests', {
         headers: { 'Authorization': `Bearer ${getToken()}` }
     });
     const data = await response.json();
@@ -571,7 +576,7 @@ async function approveRequest(requestId, userId) {
     }
 
     try {
-        const response = await fetch(`http://localhost:3000/api/admin-requests/${requestId}/approve`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/admin-requests/${requestId}/approve`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -624,7 +629,7 @@ async function rejectRequest(requestId) {
     }
 
     try {
-        const response = await fetch(`http://localhost:3000/api/admin-requests/${requestId}/reject`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/admin-requests/${requestId}/reject`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${getToken()}` }
         });
@@ -684,7 +689,7 @@ document.addEventListener('DOMContentLoaded', function () {
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Promoting...';
 
         try {
-            const response = await fetch('http://localhost:3000/api/promote-to-admin', {
+            const response = await fetch('${getApiBaseUrl()}/api/promote-to-admin', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -760,7 +765,7 @@ function showTab(tabName, event) {
 async function loadCompanyInfo() {
     try {
         console.log('Loading company info...');
-        const response = await fetch('http://localhost:3000/api/company/settings', {
+        const response = await fetch('${getApiBaseUrl()}/api/company/settings', {
             headers: { 'Authorization': `Bearer ${getToken()}` }
         });
 
@@ -818,7 +823,7 @@ async function removeDepartment(deptName) {
 
     const updatedDepartments = companySettings.departments.filter(d => d !== deptName);
 
-    const response = await fetch('http://localhost:3000/api/company/settings', {
+    const response = await fetch('${getApiBaseUrl()}/api/company/settings', {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -854,7 +859,7 @@ document.getElementById('addDepartmentBtn')?.addEventListener('click', async () 
 
     const updatedDepartments = [...companySettings.departments, deptName];
 
-    const response = await fetch('http://localhost:3000/api/company/settings', {
+    const response = await fetch('${getApiBaseUrl()}/api/company/settings', {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -934,7 +939,7 @@ function showSuccessPopup(message) {
 
 document.getElementById('leaveBalanceForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const response = await fetch('http://localhost:3000/api/company/settings', {
+    const response = await fetch('${getApiBaseUrl()}/api/company/settings', {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -1141,7 +1146,7 @@ function updateBulkActions() {
 async function demoteAdmin(userId) {
     if (!confirm('Remove admin privileges from this user?')) return;
 
-    const response = await fetch(`http://localhost:3000/api/users/${userId}/role`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/users/${userId}/role`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -1157,7 +1162,7 @@ async function demoteAdmin(userId) {
 async function deleteUser(userId) {
     if (!confirm('Permanently delete this user? This cannot be undone.')) return;
 
-    const response = await fetch(`http://localhost:3000/api/users/${userId}`, {
+    const response = await fetch(`${getApiBaseUrl()}/api/users/${userId}`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${getToken()}` }
     });
@@ -1193,7 +1198,7 @@ async function debugUnassignedRequests() {
         console.log('=== DEBUG: Testing unassigned requests API ===');
 
         // Test the debug endpoint first
-        const debugResponse = await fetch('http://localhost:3000/api/debug/requests', {
+        const debugResponse = await fetch('${getApiBaseUrl()}/api/debug/requests', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1203,7 +1208,7 @@ async function debugUnassignedRequests() {
         }
 
         // Test the unassigned endpoint
-        const unassignedResponse = await fetch('http://localhost:3000/api/requests/unassigned', {
+        const unassignedResponse = await fetch('${getApiBaseUrl()}/api/requests/unassigned', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1226,7 +1231,7 @@ async function createTestRequest() {
 
         console.log('=== Creating test request ===');
 
-        const response = await fetch('http://localhost:3000/api/debug/create-test-request', {
+        const response = await fetch('${getApiBaseUrl()}/api/debug/create-test-request', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1279,7 +1284,7 @@ async function loadDepartmentStatus() {
         const token = localStorage.getItem('authToken');
 
         // Get company settings to see all departments
-        const settingsResponse = await fetch('http://localhost:3000/api/company/settings', {
+        const settingsResponse = await fetch('${getApiBaseUrl()}/api/company/settings', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1289,7 +1294,7 @@ async function loadDepartmentStatus() {
         const departments = settingsData.company.settings.departments || [];
 
         // Get all users to check which departments have admins
-        const usersResponse = await fetch('http://localhost:3000/api/company/users', {
+        const usersResponse = await fetch('${getApiBaseUrl()}/api/company/users', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1299,7 +1304,7 @@ async function loadDepartmentStatus() {
         const users = usersData.users || [];
 
         // Get unassigned requests count per department
-        const requestsResponse = await fetch('http://localhost:3000/api/requests/unassigned', {
+        const requestsResponse = await fetch('${getApiBaseUrl()}/api/requests/unassigned', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1392,7 +1397,7 @@ async function approveUnassignedRequest(requestId) {
 
     try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch(`http://localhost:3000/api/requests/${requestId}/status`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/requests/${requestId}/status`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -1422,7 +1427,7 @@ async function rejectUnassignedRequest(requestId) {
 
     try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch(`http://localhost:3000/api/requests/${requestId}/status`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/requests/${requestId}/status`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -1631,7 +1636,7 @@ async function loadDepartmentStatus() {
         const token = localStorage.getItem('authToken');
 
         // Get company settings to see all departments
-        const settingsResponse = await fetch('http://localhost:3000/api/company/settings', {
+        const settingsResponse = await fetch('${getApiBaseUrl()}/api/company/settings', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1641,7 +1646,7 @@ async function loadDepartmentStatus() {
         const departments = settingsData.company.settings.departments || [];
 
         // Get all users to check which departments have admins
-        const usersResponse = await fetch('http://localhost:3000/api/company/users', {
+        const usersResponse = await fetch('${getApiBaseUrl()}/api/company/users', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1651,7 +1656,7 @@ async function loadDepartmentStatus() {
         const users = usersData.users || [];
 
         // Get unassigned requests count per department
-        const requestsResponse = await fetch('http://localhost:3000/api/requests/unassigned', {
+        const requestsResponse = await fetch('${getApiBaseUrl()}/api/requests/unassigned', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1743,7 +1748,7 @@ async function loadUnassignedRequestsList() {
         filteredUnassignedRequests = [];
 
         const token = localStorage.getItem('authToken');
-        const response = await fetch('http://localhost:3000/api/requests/unassigned', {
+        const response = await fetch('${getApiBaseUrl()}/api/requests/unassigned', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1862,7 +1867,7 @@ async function approveUnassignedRequest(requestId) {
 
     try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch(`http://localhost:3000/api/requests/${requestId}/status`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/requests/${requestId}/status`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -1892,7 +1897,7 @@ async function rejectUnassignedRequest(requestId) {
 
     try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch(`http://localhost:3000/api/requests/${requestId}/status`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/requests/${requestId}/status`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',

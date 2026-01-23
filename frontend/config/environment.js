@@ -36,6 +36,12 @@ if (window.location.search.includes('localhost=true')) {
 // Make config available globally
 window.APP_CONFIG = config;
 
-// Log environment info
-console.log(`🌍 Environment: ${config.ENVIRONMENT}`);
-console.log(`🔗 API Base URL: ${config.API_BASE_URL}`);
+// Log environment info with prominent styling
+console.log('%c🌍 ENVIRONMENT DETECTION RESULTS:', 'background: #4CAF50; color: white; padding: 5px; font-weight: bold;');
+console.log(`%c Environment: ${config.ENVIRONMENT}`, 'color: #2196F3; font-weight: bold;');
+console.log(`%c API Base URL: ${config.API_BASE_URL}`, 'color: #FF9800; font-weight: bold;');
+
+// Alert for debugging (remove after testing)
+if (window.location.hostname !== 'localhost') {
+    console.log('%c🚀 PRODUCTION MODE DETECTED - Should use Render backend!', 'background: #FF5722; color: white; padding: 5px; font-weight: bold;');
+}

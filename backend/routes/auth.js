@@ -124,20 +124,14 @@ router.post('/register', verifyFirebaseToken, async (req, res) => {
  * Returns user profile data from Firestore
  */
 router.get('/user-data', authenticateFirebaseToken, async (req, res) => {
-    console.log('🔍 /user-data endpoint hit');
-    console.log('🔍 Firebase user UID:', req.firebaseUser?.uid);
-
     try {
         const userDoc = await db.collection('users').doc(req.firebaseUser.uid).get();
-        console.log('🔍 User document exists:', userDoc.exists);
 
         if (!userDoc.exists) {
-            console.log('❌ User not found in Firestore');
             return res.status(404).json({ message: 'User not found', success: false });
         }
 
         const userData = userDoc.data();
-        console.log('✅ User data retrieved successfully');
 
         res.status(200).json({
             success: true,
@@ -153,7 +147,7 @@ router.get('/user-data', authenticateFirebaseToken, async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('❌ Error fetching user data:', error);
+        console.error('Error fetching user data:', error);
         res.status(500).json({ message: 'Server error', success: false });
     }
 });

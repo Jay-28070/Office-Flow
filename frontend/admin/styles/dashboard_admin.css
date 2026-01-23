@@ -58,16 +58,20 @@ body {
 .dashboard-container {
     display: flex;
     min-height: 100vh;
+    background: var(--gray-50);
 }
 
 .sidebar {
     width: 250px;
     background: var(--white);
     border-right: 1px solid var(--gray-200);
-    padding: 2rem 0;
+    padding: 1.5rem 0;
     position: fixed;
     height: 100vh;
     overflow-y: auto;
+    top: 0;
+    left: 0;
+    z-index: 100;
 }
 
 .logo {
@@ -75,10 +79,12 @@ body {
     align-items: center;
     gap: 0.75rem;
     padding: 0 1.5rem;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--primary-color);
+    border-bottom: 1px solid var(--gray-100);
+    padding-bottom: 1.5rem;
 }
 
 .nav-menu {
@@ -110,16 +116,26 @@ body {
 .main-content {
     margin-left: 250px;
     flex: 1;
-    padding: 2rem;
+    padding: 1.5rem;
+    background: var(--gray-50);
 }
 
 .content-header {
     margin-bottom: 2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    background: var(--white);
+    padding: 1.5rem 2rem;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
 }
 
 .content-header h1 {
     font-size: 2rem;
     margin-bottom: 0.5rem;
+    color: var(--gray-900);
 }
 
 .content-header p {
@@ -2691,11 +2707,12 @@ body {
 }
 
 .dashboard-section {
-    background: white;
-    border-radius: 12px;
+    background: var(--white);
+    border-radius: var(--radius-lg);
     padding: 2rem;
-    margin-bottom: 2rem;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--gray-200);
 }
 
 .section-header {
@@ -2703,6 +2720,8 @@ body {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--gray-100);
 }
 
 .requests-container {

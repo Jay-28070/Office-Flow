@@ -18,9 +18,9 @@ console.log('- FORCE_LOCALHOST?', window.FORCE_LOCALHOST);
 
 // Configuration
 const config = {
-    // Replace 'your-render-app-name' with your actual Render app name
+    // Railway URL - your actual deployment
     API_BASE_URL: isProduction
-        ? 'https://office-flow-8igf.onrender.com'  // Your actual Render backend URL
+        ? 'https://office-flow-production.up.railway.app'  // Your Railway backend URL
         : 'http://localhost:3000',  // Local development
 
     // Environment info

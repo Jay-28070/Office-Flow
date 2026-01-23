@@ -5,6 +5,3 @@ builder = "nixpacks"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
-
-[variables]
-NODE_ENV = "production"

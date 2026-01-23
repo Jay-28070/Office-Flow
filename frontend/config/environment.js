@@ -14,7 +14,7 @@ const isProduction = (window.location.hostname !== 'localhost' && window.locatio
 const config = {
     // Replace 'your-render-app-name' with your actual Render app name
     API_BASE_URL: isProduction
-        ? 'https://YOUR-ACTUAL-RENDER-APP-NAME.onrender.com'  // Update this after deployment
+        ? 'https://office-flow-8igf.onrender.com'  // Your actual Render backend URL
         : 'http://localhost:3000',  // Local development
 
     // Environment info

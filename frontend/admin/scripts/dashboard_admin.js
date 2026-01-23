@@ -4,6 +4,11 @@
  * Supports Admin and Super Admin roles with department-specific access control
  */
 
+// API Base URL - uses environment detection
+function getApiBaseUrl() {
+    return window.APP_CONFIG?.API_BASE_URL || 'http://localhost:3000';
+}
+
 // ===== GLOBAL STATE =====
 let currentUser = null;
 let currentAdmin = null;
@@ -259,7 +264,7 @@ async function loadCurrentUser() {
         }
 
         // Fetch user data from backend
-        const response = await fetch(`http://localhost:3000/api/users/${userId}`, {
+        const response = await fetch(`${getApiBaseUrl()}/api/users/${userId}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -1187,7 +1192,7 @@ async function handleProfileUpdate(e) {
             if (jobTitle !== currentAdmin.jobTitle) updateData.jobTitle = jobTitle;
             if (department && department !== currentAdmin.department) updateData.department = department;
 
-            const response = await fetch(`http://localhost:3000/api/users/${user.id}/profile`, {
+            const response = await fetch(`${getApiBaseUrl()}/api/users/${user.id}/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

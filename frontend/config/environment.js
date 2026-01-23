@@ -1,6 +1,7 @@
 /**
  * Environment Configuration
  * Automatically detects environment and sets API base URL
+ * Updated: Force cache refresh
  */
 
 // PRESENTATION MODE: Uncomment next line to force localhost for demos

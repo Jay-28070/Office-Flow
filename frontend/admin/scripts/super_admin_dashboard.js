@@ -91,7 +91,7 @@ async function loadData() {
 async function loadCompanySettings() {
     try {
         console.log('Loading company settings...');
-        const response = await fetch('${getApiBaseUrl()}/api/company/settings', {
+        const response = await fetch(`${getApiBaseUrl()}/api/company/settings`, {
             headers: { 'Authorization': `Bearer ${getToken()}` }
         });
 
@@ -323,7 +323,7 @@ function displayUsers() {
 }
 
 async function loadAdminRequests() {
-    const response = await fetch('${getApiBaseUrl()}/api/admin-requests', {
+    const response = await fetch(`${getApiBaseUrl()}/api/admin-requests`, {
         headers: { 'Authorization': `Bearer ${getToken()}` }
     });
     const data = await response.json();
@@ -1974,3 +1974,4 @@ document.addEventListener('DOMContentLoaded', function () {
 
     console.log('Super Admin Dashboard ready');
 });
+

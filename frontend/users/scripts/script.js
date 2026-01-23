@@ -181,13 +181,21 @@ function initFormListeners() {
 
                 // Fetch user data from backend
                 console.log('Fetching user data from backend...');
+
+                // Add timeout to prevent infinite hanging
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
                 const response = await fetch(`${getApiBaseUrl()}/api/auth/user-data`, {
                     method: 'GET',
                     headers: {
                         'Authorization': `Bearer ${idToken}`,
                         'Content-Type': 'application/json'
-                    }
+                    },
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
 
                 console.log('Backend response status:', response.status);
                 const data = await response.json();
@@ -223,8 +231,14 @@ function initFormListeners() {
                 console.error('Error message:', err.message);
                 let errorMessage = 'An error occurred. Please try again.';
 
+                // Handle backend timeout/connection errors
+                if (err.name === 'AbortError') {
+                    errorMessage = 'Backend server is taking too long to respond. The server might be sleeping - please try again in a minute.';
+                } else if (err.message === 'Failed to fetch') {
+                    errorMessage = 'Cannot connect to backend server. Please try again later.';
+                }
                 // Handle Firebase auth errors
-                if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
+                else if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found') {
                     errorMessage = 'Invalid email or password.';
                 } else if (err.code === 'auth/too-many-requests') {
                     errorMessage = 'Too many failed attempts. Please try again later.';

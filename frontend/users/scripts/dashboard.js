@@ -801,12 +801,17 @@ async function clearRequestHistory(status) {
             })
         });
 
+        console.log('📡 Clear-history response status:', response.status);
+
         let finalDeletedCount = 0;
         if (response.ok) {
             const result = await response.json();
             finalDeletedCount = result.deletedCount || 0;
             console.log(`✅ Successfully deleted ${finalDeletedCount} requests permanently from database`);
         } else {
+            // Log the actual error for debugging
+            const errorText = await response.text();
+            console.error('❌ Backend deletion failed:', response.status, errorText);
             console.warn('⚠️ Backend deletion failed, clearing locally only');
             finalDeletedCount = refreshedRequestsToDelete.length;
         }

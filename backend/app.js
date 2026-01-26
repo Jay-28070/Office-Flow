@@ -1144,45 +1144,39 @@ app.post('/api/requests/clear-history', authenticateFirebaseToken, async (req, r
             });
         }
 
-        console.log(`User ${req.user.userId} requesting to clear ${status} request history from their view`);
+        console.log(`User ${req.user.userId} requesting to permanently delete ${status} requests to save storage`);
 
-        // Define which statuses to hide from user's view
-        const statusesToHide = status === 'Completed' ? ['Completed', 'Approved'] : [status];
+        // Define which statuses to permanently delete
+        const statusesToDelete = status === 'Completed' ? ['Completed', 'Approved'] : [status];
 
         // Query for user's requests with the specified status(es)
         const requestsRef = db.collection('requests');
         const batch = db.batch();
-        let hiddenCount = 0;
+        let deletedCount = 0;
 
-        for (const statusToHide of statusesToHide) {
+        for (const statusToDelete of statusesToDelete) {
             const query = requestsRef
                 .where('userId', '==', req.user.userId)
-                .where('status', '==', statusToHide);
+                .where('status', '==', statusToDelete);
 
             const snapshot = await query.get();
 
             snapshot.docs.forEach(doc => {
-                // Add user to hiddenFromUsers array instead of deleting
-                const hiddenFromUsers = doc.data().hiddenFromUsers || [];
-                if (!hiddenFromUsers.includes(req.user.userId)) {
-                    batch.update(doc.ref, {
-                        hiddenFromUsers: admin.firestore.FieldValue.arrayUnion(req.user.userId),
-                        lastUpdated: admin.firestore.FieldValue.serverTimestamp()
-                    });
-                    hiddenCount++;
-                }
+                // Permanently delete the request to save storage
+                batch.delete(doc.ref);
+                deletedCount++;
             });
         }
 
-        if (hiddenCount > 0) {
+        if (deletedCount > 0) {
             await batch.commit();
-            console.log(`Hidden ${hiddenCount} ${status} requests from user ${req.user.userId}'s view`);
+            console.log(`Permanently deleted ${deletedCount} ${status} requests for user ${req.user.userId} to save storage`);
         }
 
         res.status(200).json({
             success: true,
-            message: `Successfully cleared ${hiddenCount} ${status.toLowerCase()} request${hiddenCount !== 1 ? 's' : ''} from your view`,
-            hiddenCount,
+            message: `Successfully deleted ${deletedCount} ${status.toLowerCase()} request${deletedCount !== 1 ? 's' : ''} permanently`,
+            deletedCount,
             status
         });
     } catch (error) {

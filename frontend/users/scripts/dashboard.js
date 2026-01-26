@@ -787,16 +787,32 @@ async function clearRequestHistory(status) {
             return;
         }
 
-        console.log(`🗑️ Clearing ${refreshedRequestsToDelete.length} requests from view...`);
+        console.log(`🗑️ Clearing ${refreshedRequestsToDelete.length} requests from your view...`);
 
-        // SIMPLE SOLUTION: Just remove from local array and reload from backend
-        // This will effectively "clear" them from the user's view
-        console.log('✅ Clearing requests from local view...');
+        // Use the clear-history endpoint
+        const response = await fetch(`${getApiUrl()}/api/requests/clear-history`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                status: status
+            })
+        });
+
+        let finalDeletedCount = 0;
+        if (response.ok) {
+            const result = await response.json();
+            finalDeletedCount = result.hiddenCount || 0;
+            console.log(`✅ Successfully cleared ${finalDeletedCount} requests from your view`);
+        } else {
+            console.warn('⚠️ Backend clear failed, clearing locally only');
+            finalDeletedCount = refreshedRequestsToDelete.length;
+        }
 
         // Remove from local array
         requests = requests.filter(request => !statusesToRemove.includes(request.status));
-
-        const finalDeletedCount = refreshedRequestsToDelete.length;
 
         // Remove from local array
         requests = requests.filter(request => !statusesToRemove.includes(request.status));
@@ -805,8 +821,8 @@ async function clearRequestHistory(status) {
         closeRequestsModal();
         updateStats();
 
-        // Reload from backend to confirm deletion
-        setTimeout(() => loadUserRequests(), 1000);
+        // Update dashboard stats immediately (don't reload from backend)
+        updateStats();
 
         showMessage(`✅ Cleared ${finalDeletedCount} ${status.toLowerCase()} request${finalDeletedCount !== 1 ? 's' : ''} from your view!`, 'success');
         console.log(`✅ Successfully cleared ${finalDeletedCount} requests from view`);

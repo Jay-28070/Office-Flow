@@ -1024,7 +1024,18 @@ app.get('/api/requests', authenticateFirebaseToken, async (req, res) => {
                 id: doc.id,
                 ...doc.data()
             }))
-            .filter(request => request.status !== 'DELETED'); // Filter out deleted requests
+            .filter(request => {
+                // Filter out deleted requests
+                if (request.status === 'DELETED') return false;
+
+                // For regular users, filter out requests they've hidden from their view
+                if (req.user.role !== 'admin' && req.user.role !== 'superadmin') {
+                    const hiddenFromUsers = request.hiddenFromUsers || [];
+                    if (hiddenFromUsers.includes(req.user.userId)) return false;
+                }
+
+                return true;
+            });
 
         // Sort by dateSubmitted in JavaScript (newest first)
         requests.sort((a, b) => {
@@ -1133,39 +1144,45 @@ app.post('/api/requests/clear-history', authenticateFirebaseToken, async (req, r
             });
         }
 
-        console.log(`User ${req.user.userId} requesting to clear ${status} request history`);
+        console.log(`User ${req.user.userId} requesting to clear ${status} request history from their view`);
 
-        // Define which statuses to delete
-        // For 'Completed', also delete 'Approved' requests since they're shown together
-        const statusesToDelete = status === 'Completed' ? ['Completed', 'Approved'] : [status];
+        // Define which statuses to hide from user's view
+        const statusesToHide = status === 'Completed' ? ['Completed', 'Approved'] : [status];
 
         // Query for user's requests with the specified status(es)
         const requestsRef = db.collection('requests');
         const batch = db.batch();
-        let deletedCount = 0;
+        let hiddenCount = 0;
 
-        for (const statusToDelete of statusesToDelete) {
+        for (const statusToHide of statusesToHide) {
             const query = requestsRef
                 .where('userId', '==', req.user.userId)
-                .where('status', '==', statusToDelete);
+                .where('status', '==', statusToHide);
 
             const snapshot = await query.get();
 
             snapshot.docs.forEach(doc => {
-                batch.delete(doc.ref);
-                deletedCount++;
+                // Add user to hiddenFromUsers array instead of deleting
+                const hiddenFromUsers = doc.data().hiddenFromUsers || [];
+                if (!hiddenFromUsers.includes(req.user.userId)) {
+                    batch.update(doc.ref, {
+                        hiddenFromUsers: admin.firestore.FieldValue.arrayUnion(req.user.userId),
+                        lastUpdated: admin.firestore.FieldValue.serverTimestamp()
+                    });
+                    hiddenCount++;
+                }
             });
         }
 
-        if (deletedCount > 0) {
+        if (hiddenCount > 0) {
             await batch.commit();
-            console.log(`Cleared ${deletedCount} ${status} requests for user ${req.user.userId}`);
+            console.log(`Hidden ${hiddenCount} ${status} requests from user ${req.user.userId}'s view`);
         }
 
         res.status(200).json({
             success: true,
-            message: `Successfully cleared ${deletedCount} ${status.toLowerCase()} request${deletedCount !== 1 ? 's' : ''} from your history`,
-            deletedCount,
+            message: `Successfully cleared ${hiddenCount} ${status.toLowerCase()} request${hiddenCount !== 1 ? 's' : ''} from your view`,
+            hiddenCount,
             status
         });
     } catch (error) {

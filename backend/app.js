@@ -1177,7 +1177,7 @@ app.post('/api/requests/clear-history', authenticateFirebaseToken, async (req, r
     }
 });
 
-// Bulk delete requests by status (User only - their own requests)
+// Bulk delete requests by status (User only - their own requests) - Updated for Railway deployment
 app.delete('/api/requests/bulk-delete', authenticateFirebaseToken, async (req, res) => {
     try {
         const { status } = req.body;
@@ -1233,7 +1233,7 @@ app.delete('/api/requests/bulk-delete', authenticateFirebaseToken, async (req, r
     }
 });
 
-// Delete individual request (User only - their own requests)
+// Delete individual request (User only - their own requests) - Updated for Railway deployment
 app.delete('/api/requests/:requestId', authenticateFirebaseToken, async (req, res) => {
     try {
         const { requestId } = req.params;

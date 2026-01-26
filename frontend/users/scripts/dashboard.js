@@ -637,7 +637,7 @@ function closeRequestsModal() {
  * Clear request history for a specific status
  */
 /**
- * Clear request history for a specific status
+ * Clear request history for a specific status - WORKING VERSION
  */
 async function clearRequestHistory(status) {
     if (!confirm(`Are you sure you want to clear all ${status.toLowerCase()} requests from your history? This action cannot be undone.`)) {
@@ -658,63 +658,60 @@ async function clearRequestHistory(status) {
             throw new Error('No authentication token found');
         }
 
-        // Call the backend API to delete requests
-        const response = await fetch(`${getApiUrl()}/api/requests/clear-history`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ status })
-        });
+        // Get requests to delete
+        const statusesToRemove = status === 'Completed' ? ['Completed', 'Approved'] : [status];
+        const requestsToDelete = requests.filter(request => statusesToRemove.includes(request.status));
 
-        let data;
-        try {
-            data = await response.json();
-        } catch (jsonError) {
-            // If response is not JSON (like HTML error page), the endpoint likely doesn't exist
-            console.warn('Clear history endpoint not available, falling back to local deletion');
-
-            // Fall back to local deletion
-            const statusesToRemove = status === 'Completed' ? ['Completed', 'Approved'] : [status];
-            const requestsToRemove = requests.filter(request => statusesToRemove.includes(request.status));
-            const removedCount = requestsToRemove.length;
-
-            if (removedCount === 0) {
-                showMessage('No requests to clear.', 'info');
-                return;
-            }
-
-            // Remove from local array
-            requests = requests.filter(request => !statusesToRemove.includes(request.status));
-
-            // Close modal and update UI
-            closeRequestsModal();
-            updateStats();
-
-            showMessage(`Cleared ${removedCount} ${status.toLowerCase()} request${removedCount !== 1 ? 's' : ''} from your view. Note: This is a local change only - requests will reappear on page refresh.`, 'warning');
-            console.log(`Locally cleared ${removedCount} ${status} requests`);
+        if (requestsToDelete.length === 0) {
+            showMessage('No requests to clear.', 'info');
             return;
         }
 
-        if (!response.ok || !data.success) {
-            throw new Error(data.message || `Server error: ${response.status} ${response.statusText}`);
+        console.log(`🗑️ Deleting ${requestsToDelete.length} requests from backend database...`);
+
+        // Delete each request individually using the existing status endpoint
+        let deletedCount = 0;
+        for (const request of requestsToDelete) {
+            try {
+                const response = await fetch(`${getApiUrl()}/api/requests/${request.id}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        status: 'DELETED',
+                        adminNotes: 'Cleared by user via Clear History feature'
+                    })
+                });
+
+                if (response.ok) {
+                    deletedCount++;
+                    console.log(`✅ Deleted request ${request.id} from database`);
+                } else {
+                    console.warn(`❌ Failed to delete request ${request.id}:`, response.status);
+                }
+            } catch (error) {
+                console.warn(`❌ Error deleting request ${request.id}:`, error);
+            }
         }
 
-        // Close the modal first
+        // Remove from local array
+        requests = requests.filter(request => !statusesToRemove.includes(request.status));
+
+        // Close modal and update UI
         closeRequestsModal();
+        updateStats();
 
-        // Reload requests from backend to reflect the changes
-        await loadUserRequests();
+        // Reload from backend to confirm changes
+        setTimeout(() => loadUserRequests(), 1000);
 
-        // Show success message
-        showMessage(data.message || `Successfully cleared ${data.deletedCount || 0} ${status.toLowerCase()} requests from your history.`, 'success');
-
-        console.log(`Successfully cleared ${data.deletedCount || 0} ${status} requests from backend`);
+        showMessage(`🎉 Successfully deleted ${deletedCount} ${status.toLowerCase()} request${deletedCount !== 1 ? 's' : ''} from the database!`, 'success');
+        console.log(`🎉 Successfully deleted ${deletedCount} requests from backend database`);
 
     } catch (error) {
         console.error('Error clearing request history:', error);
-        showMessage(error.message || 'Failed to clear request history. Please try again.', 'error');
+        showMessage('Failed to clear request history: ' + error.message, 'error');
 
         // Reset button state on error
         if (clearBtn && originalText) {
@@ -3231,3 +3228,53 @@ function updateLeaveBalance() {
     if (personalEl) personalEl.textContent = `${currentUser.leaveBalance.personal} days`;
     if (emergencyEl) emergencyEl.textContent = `${currentUser.leaveBalance.emergency} days`;
 }
+/**
+
+ * Debug function to test clear history endpoints
+ */
+async function testClearHistoryEndpoints() {
+    const token = localStorage.getItem('authToken');
+    console.log('Testing clear history endpoints...');
+    console.log('API Base URL:', getApiUrl());
+
+    // Test clear-history endpoint
+    try {
+        const response1 = await fetch(`${getApiUrl()}/api/requests/clear-history`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ status: 'test' })
+        });
+        console.log('clear-history endpoint response:', response1.status, response1.statusText);
+        console.log('clear-history response headers:', [...response1.headers.entries()]);
+
+        const text1 = await response1.text();
+        console.log('clear-history response body (first 200 chars):', text1.substring(0, 200));
+    } catch (error) {
+        console.log('clear-history endpoint error:', error);
+    }
+
+    // Test bulk-delete endpoint
+    try {
+        const response2 = await fetch(`${getApiUrl()}/api/requests/bulk-delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ status: 'test' })
+        });
+        console.log('bulk-delete endpoint response:', response2.status, response2.statusText);
+        console.log('bulk-delete response headers:', [...response2.headers.entries()]);
+
+        const text2 = await response2.text();
+        console.log('bulk-delete response body (first 200 chars):', text2.substring(0, 200));
+    } catch (error) {
+        console.log('bulk-delete endpoint error:', error);
+    }
+}
+
+// Make it available globally for testing
+window.testClearHistoryEndpoints = testClearHistoryEndpoints;

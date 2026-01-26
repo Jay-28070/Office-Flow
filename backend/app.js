@@ -1,5 +1,8 @@
 'use strict';
 
+// FORCE RAILWAY DEPLOYMENT - Backend v2.1 with deletion endpoints
+console.log('🚀 Office Flow Backend v2.1 - Request deletion endpoints included');
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');

@@ -619,8 +619,8 @@ async function clearRequestHistory(status) {
         }
 
         // Call the backend API to delete requests
-        const response = await fetch(`${getApiUrl()}/api/requests/bulk-delete`, {
-            method: 'DELETE',
+        const response = await fetch(`${getApiUrl()}/api/requests/clear-history`, {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
@@ -628,10 +628,37 @@ async function clearRequestHistory(status) {
             body: JSON.stringify({ status })
         });
 
-        const data = await response.json();
+        let data;
+        try {
+            data = await response.json();
+        } catch (jsonError) {
+            // If response is not JSON (like HTML error page), the endpoint likely doesn't exist
+            console.warn('Clear history endpoint not available, falling back to local deletion');
+
+            // Fall back to local deletion
+            const statusesToRemove = status === 'Completed' ? ['Completed', 'Approved'] : [status];
+            const requestsToRemove = requests.filter(request => statusesToRemove.includes(request.status));
+            const removedCount = requestsToRemove.length;
+
+            if (removedCount === 0) {
+                showMessage('No requests to clear.', 'info');
+                return;
+            }
+
+            // Remove from local array
+            requests = requests.filter(request => !statusesToRemove.includes(request.status));
+
+            // Close modal and update UI
+            closeRequestsModal();
+            updateStats();
+
+            showMessage(`Cleared ${removedCount} ${status.toLowerCase()} request${removedCount !== 1 ? 's' : ''} from your view. Note: This is a local change only - requests will reappear on page refresh.`, 'warning');
+            console.log(`Locally cleared ${removedCount} ${status} requests`);
+            return;
+        }
 
         if (!response.ok || !data.success) {
-            throw new Error(data.message || 'Failed to clear request history');
+            throw new Error(data.message || `Server error: ${response.status} ${response.statusText}`);
         }
 
         // Close the modal first

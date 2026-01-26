@@ -1119,6 +1119,62 @@ app.delete('/api/debug/cleanup-test-requests', authenticateFirebaseToken, requir
     }
 });
 
+// Clear request history by status (User only - their own requests)
+app.post('/api/requests/clear-history', authenticateFirebaseToken, async (req, res) => {
+    try {
+        const { status } = req.body;
+
+        if (!status) {
+            return res.status(400).json({
+                message: 'Status is required',
+                success: false
+            });
+        }
+
+        console.log(`User ${req.user.userId} requesting to clear ${status} request history`);
+
+        // Define which statuses to delete
+        // For 'Completed', also delete 'Approved' requests since they're shown together
+        const statusesToDelete = status === 'Completed' ? ['Completed', 'Approved'] : [status];
+
+        // Query for user's requests with the specified status(es)
+        const requestsRef = db.collection('requests');
+        const batch = db.batch();
+        let deletedCount = 0;
+
+        for (const statusToDelete of statusesToDelete) {
+            const query = requestsRef
+                .where('userId', '==', req.user.userId)
+                .where('status', '==', statusToDelete);
+
+            const snapshot = await query.get();
+
+            snapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+                deletedCount++;
+            });
+        }
+
+        if (deletedCount > 0) {
+            await batch.commit();
+            console.log(`Cleared ${deletedCount} ${status} requests for user ${req.user.userId}`);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully cleared ${deletedCount} ${status.toLowerCase()} request${deletedCount !== 1 ? 's' : ''} from your history`,
+            deletedCount,
+            status
+        });
+    } catch (error) {
+        console.error('Error clearing request history:', error);
+        res.status(500).json({
+            message: 'Failed to clear request history',
+            success: false
+        });
+    }
+});
+
 // Bulk delete requests by status (User only - their own requests)
 app.delete('/api/requests/bulk-delete', authenticateFirebaseToken, async (req, res) => {
     try {

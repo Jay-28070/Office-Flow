@@ -78,6 +78,46 @@ function checkAuthentication() {
 }
 
 /**
+ * Validate token and handle authentication errors
+ */
+async function validateToken() {
+    const token = localStorage.getItem('authToken');
+    if (!token) {
+        redirectToLogin('No authentication token found');
+        return false;
+    }
+
+    try {
+        // Test the token with a simple API call
+        const response = await fetch(`${getApiUrl()}/api/company/settings`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.status === 401 || response.status === 403) {
+            redirectToLogin('Session expired');
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Token validation error:', error);
+        return true; // Don't redirect on network errors
+    }
+}
+
+/**
+ * Redirect to login with message
+ */
+function redirectToLogin(message) {
+    showMessage(message + '. Redirecting to login...', 'error');
+    setTimeout(() => {
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        window.location.href = 'login.html';
+    }, 2000);
+}
+
+/**
  * Update user's last login time
  */
 async function updateLastLogin() {
@@ -2697,7 +2737,19 @@ async function handleFormSubmit(e) {
         console.log('Request submitted successfully:', data.request);
     } catch (error) {
         console.error('Error submitting request:', error);
-        showMessage('Failed to submit request: ' + error.message, 'error');
+
+        // Check if it's an authentication error
+        if (error.message.includes('Invalid or expired token') || error.message.includes('Access token required')) {
+            showMessage('Your session has expired. Please log in again.', 'error');
+            // Redirect to login after a short delay
+            setTimeout(() => {
+                localStorage.removeItem('authToken');
+                localStorage.removeItem('user');
+                window.location.href = 'login.html';
+            }, 2000);
+        } else {
+            showMessage('Failed to submit request: ' + error.message, 'error');
+        }
 
         // Reset button
         submitBtn.innerHTML = originalText;

@@ -804,10 +804,10 @@ async function clearRequestHistory(status) {
         let finalDeletedCount = 0;
         if (response.ok) {
             const result = await response.json();
-            finalDeletedCount = result.hiddenCount || 0;
-            console.log(`✅ Successfully cleared ${finalDeletedCount} requests from your view`);
+            finalDeletedCount = result.deletedCount || 0;
+            console.log(`✅ Successfully deleted ${finalDeletedCount} requests permanently from database`);
         } else {
-            console.warn('⚠️ Backend clear failed, clearing locally only');
+            console.warn('⚠️ Backend deletion failed, clearing locally only');
             finalDeletedCount = refreshedRequestsToDelete.length;
         }
 
@@ -824,8 +824,8 @@ async function clearRequestHistory(status) {
         // Update dashboard stats immediately (don't reload from backend)
         updateStats();
 
-        showMessage(`✅ Cleared ${finalDeletedCount} ${status.toLowerCase()} request${finalDeletedCount !== 1 ? 's' : ''} from your view!`, 'success');
-        console.log(`✅ Successfully cleared ${finalDeletedCount} requests from view`);
+        showMessage(`✅ Permanently deleted ${finalDeletedCount} ${status.toLowerCase()} request${finalDeletedCount !== 1 ? 's' : ''} to save storage space!`, 'success');
+        console.log(`✅ Successfully deleted ${finalDeletedCount} requests permanently from database`);
 
     } catch (error) {
         console.error('Error clearing request history:', error);

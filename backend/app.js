@@ -1479,46 +1479,75 @@ app.put('/api/requests/:requestId/status', authenticateFirebaseToken, requireAdm
             updateData.adminComments = comments;
         }
 
-        // Add status-specific timestamps
+        // Add status-specific timestamps and auto-deletion scheduling
         if (status === 'Completed') {
             updateData.completedAt = admin.firestore.FieldValue.serverTimestamp();
+            // Schedule for deletion in 7 days
+            const deleteAt = new Date();
+            deleteAt.setDate(deleteAt.getDate() + 7);
+            updateData.scheduledForDeletion = admin.firestore.Timestamp.fromDate(deleteAt);
+            console.log(`Request ${requestId} scheduled for auto-deletion on ${deleteAt.toISOString()}`);
         } else if (status === 'Rejected') {
             updateData.rejectedAt = admin.firestore.FieldValue.serverTimestamp();
-        } else if (status === 'In Progress') {
-            updateData.startedAt = admin.firestore.FieldValue.serverTimestamp();
-        }
-
-        // Handle leave request approval/rejection with balance deduction
-        if (requestData.type === 'Leave' && status === 'Completed' && requestData.deduct && requestData.leave?.days) {
-            const userDoc = await db.collection('users').doc(requestData.userId).get();
-            if (userDoc.exists) {
-                const userData = userDoc.data();
-                const days = Number(requestData.leave.days) || 0;
-                const leaveType = (requestData.leave.leaveType || 'annual').toLowerCase();
-
-                const leaveBalance = userData.leaveBalance || {};
-                if (leaveBalance.annual === undefined) leaveBalance.annual = 0;
-                if (leaveBalance.sick === undefined) leaveBalance.sick = 0;
-                if (leaveBalance.personal === undefined) leaveBalance.personal = 0;
-                if (leaveBalance.emergency === undefined) leaveBalance.emergency = 0;
-
-                if (leaveType === 'sick') leaveBalance.sick = Math.max(0, leaveBalance.sick - days);
-                else if (leaveType === 'personal') leaveBalance.personal = Math.max(0, leaveBalance.personal - days);
-                else if (leaveType === 'emergency') leaveBalance.emergency = Math.max(0, leaveBalance.emergency - days);
-                else leaveBalance.annual = Math.max(0, leaveBalance.annual - days);
-
-                await db.collection('users').doc(requestData.userId).update({ leaveBalance });
-            }
+            // Schedule for deletion in 30 days
+            const deleteAt = new Date();
+            deleteAt.setDate(deleteAt.getDate() + 30);
+            updateData.scheduledForDeletion = admin.firestore.Timestamp.fromDate(deleteAt);
+            console.log(`Request ${requestId} scheduled for auto-deletion on ${deleteAt.toISOString()}`);
         }
 
         await db.collection('requests').doc(requestId).update(updateData);
 
+        console.log(`Request ${requestId} status updated to ${status} by ${req.user.role} ${req.user.userId}`);
+
         res.status(200).json({
             success: true,
-            message: `Request ${status.toLowerCase()} successfully`
+            message: 'Request status updated successfully',
+            status: status
         });
     } catch (error) {
         console.error('Error updating request status:', error);
-        res.status(500).json({ message: 'Server error', success: false });
+        res.status(500).json({ message: 'Failed to update request status', success: false });
     }
+});
+updateData.completedAt = admin.firestore.FieldValue.serverTimestamp();
+        } else if (status === 'Rejected') {
+    updateData.rejectedAt = admin.firestore.FieldValue.serverTimestamp();
+} else if (status === 'In Progress') {
+    updateData.startedAt = admin.firestore.FieldValue.serverTimestamp();
+}
+
+// Handle leave request approval/rejection with balance deduction
+if (requestData.type === 'Leave' && status === 'Completed' && requestData.deduct && requestData.leave?.days) {
+    const userDoc = await db.collection('users').doc(requestData.userId).get();
+    if (userDoc.exists) {
+        const userData = userDoc.data();
+        const days = Number(requestData.leave.days) || 0;
+        const leaveType = (requestData.leave.leaveType || 'annual').toLowerCase();
+
+        const leaveBalance = userData.leaveBalance || {};
+        if (leaveBalance.annual === undefined) leaveBalance.annual = 0;
+        if (leaveBalance.sick === undefined) leaveBalance.sick = 0;
+        if (leaveBalance.personal === undefined) leaveBalance.personal = 0;
+        if (leaveBalance.emergency === undefined) leaveBalance.emergency = 0;
+
+        if (leaveType === 'sick') leaveBalance.sick = Math.max(0, leaveBalance.sick - days);
+        else if (leaveType === 'personal') leaveBalance.personal = Math.max(0, leaveBalance.personal - days);
+        else if (leaveType === 'emergency') leaveBalance.emergency = Math.max(0, leaveBalance.emergency - days);
+        else leaveBalance.annual = Math.max(0, leaveBalance.annual - days);
+
+        await db.collection('users').doc(requestData.userId).update({ leaveBalance });
+    }
+}
+
+await db.collection('requests').doc(requestId).update(updateData);
+
+res.status(200).json({
+    success: true,
+    message: `Request ${status.toLowerCase()} successfully`
+});
+    } catch (error) {
+    console.error('Error updating request status:', error);
+    res.status(500).json({ message: 'Server error', success: false });
+}
 });

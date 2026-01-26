@@ -668,9 +668,10 @@ async function clearRequestHistory(status) {
         }
 
         console.log(`🗑️ Deleting ${requestsToDelete.length} requests from backend database...`);
+        console.log('🔍 DEBUG: About to call clear-history endpoint with POST method');
 
         // Use the proper clear-history endpoint for users
-        const response = await fetch(`${getApiUrl()}/api/requests/clear-history`, {
+        const response = await fetch(`${getApiUrl()}/api/requests/clear-history?v=2&t=${Date.now()}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -3251,24 +3252,8 @@ async function testClearHistoryEndpoints() {
         console.log('clear-history endpoint error:', error);
     }
 
-    // Test bulk-delete endpoint
-    try {
-        const response2 = await fetch(`${getApiUrl()}/api/requests/bulk-delete`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ status: 'test' })
-        });
-        console.log('bulk-delete endpoint response:', response2.status, response2.statusText);
-        console.log('bulk-delete response headers:', [...response2.headers.entries()]);
-
-        const text2 = await response2.text();
-        console.log('bulk-delete response body (first 200 chars):', text2.substring(0, 200));
-    } catch (error) {
-        console.log('bulk-delete endpoint error:', error);
-    }
+    // Test bulk-delete endpoint - REMOVED to avoid confusion
+    console.log('bulk-delete test removed - using clear-history endpoint instead');
 }
 
 // Make it available globally for testing

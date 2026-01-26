@@ -687,8 +687,8 @@ function showRequestsPopup(status) {
                                 <p class="modal-request-description">${request.description || 'No description provided'}</p>
                             </div>
                             <div class="modal-request-actions">
-                                <button class="btn-close-request" onclick="closeIndividualRequest('${request.id}', '${status}')" title="Remove this request from your view">
-                                    <i class="fas fa-times"></i>
+                                <button class="btn-close-request" onclick="closeIndividualRequest('${request.id}', '${status}')" title="Hide this request from your view">
+                                    <i class="fas fa-eye-slash"></i>
                                 </button>
                             </div>
                         </div>
@@ -703,9 +703,9 @@ function showRequestsPopup(status) {
             <div class="requests-modal-footer">
                 <div class="modal-footer-buttons">
                     ${canClearHistory && filteredRequests.length > 0 ? `
-                        <button class="btn btn-danger" onclick="clearRequestHistory('${status}')" title="Clear all ${status.toLowerCase()} requests from your history">
-                            <i class="fas fa-trash"></i>
-                            Clear History
+                        <button class="btn btn-danger" onclick="clearRequestHistory('${status}')" title="Hide all ${status.toLowerCase()} requests from your view">
+                            <i class="fas fa-eye-slash"></i>
+                            Clear from View
                         </button>
                     ` : ''}
                     <button class="btn btn-primary" onclick="closeRequestsModal()">
@@ -740,10 +740,10 @@ function closeRequestsModal() {
  * Clear request history for a specific status
  */
 /**
- * Clear request history for a specific status - WORKING VERSION
+ * Clear request history for a specific status - Persistent clearing
  */
 async function clearRequestHistory(status) {
-    if (!confirm(`Are you sure you want to clear all ${status.toLowerCase()} requests from your history? This action cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to clear all ${status.toLowerCase()} requests from your view? They will stay hidden even after refresh.`)) {
         return;
     }
 
@@ -756,92 +756,43 @@ async function clearRequestHistory(status) {
     }
 
     try {
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            throw new Error('No authentication token found');
-        }
+        // Get requests to clear from view
+        const statusesToClear = status === 'Completed' ? ['Completed', 'Approved'] : [status];
+        const requestsToClear = requests.filter(request => statusesToClear.includes(request.status));
 
-        // Get requests to delete
-        const statusesToRemove = status === 'Completed' ? ['Completed', 'Approved'] : [status];
-        const requestsToDelete = requests.filter(request => statusesToRemove.includes(request.status));
-
-        if (requestsToDelete.length === 0) {
+        if (requestsToClear.length === 0) {
             showMessage('No requests to clear.', 'info');
             return;
         }
 
-        console.log(`🗑️ Deleting ${requestsToDelete.length} requests from backend database...`);
-        console.log('🔍 Request IDs to delete:', requestsToDelete.map(r => r.id));
+        console.log(`🗑️ Clearing ${requestsToClear.length} ${status.toLowerCase()} requests from view...`);
 
-        // First, refresh requests from backend to make sure we have current data
-        console.log('🔄 Refreshing requests from backend before deletion...');
-        await loadUserRequests();
+        // Get existing cleared requests from localStorage
+        const clearedRequests = getClearedRequests();
 
-        // Re-filter requests after refresh
-        const refreshedRequestsToDelete = requests.filter(request => statusesToRemove.includes(request.status));
-        console.log('🔍 Refreshed request IDs to delete:', refreshedRequestsToDelete.map(r => r.id));
+        // Add request IDs to cleared list
+        requestsToClear.forEach(request => {
+            clearedRequests.add(request.id);
+        });
 
-        if (refreshedRequestsToDelete.length === 0) {
-            showMessage('No requests to clear after refresh.', 'info');
-            closeRequestsModal();
-            return;
-        }
+        // Save to localStorage
+        saveClearedRequests(clearedRequests);
 
-        console.log(`🗑️ Permanently deleting ${refreshedRequestsToDelete.length} requests from database...`);
-
-        // Since clear-history endpoint doesn't exist in production, delete individually
-        let deletedCount = 0;
-        const errors = [];
-
-        for (const request of refreshedRequestsToDelete) {
-            try {
-                console.log(`🔄 Deleting request ${request.id} permanently...`);
-                const response = await fetch(`${getApiUrl()}/api/requests/${request.id}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                console.log(`📡 Delete response for ${request.id}:`, response.status);
-
-                if (response.ok) {
-                    deletedCount++;
-                    console.log(`✅ Permanently deleted request ${request.id} from database`);
-                } else {
-                    const errorText = await response.text();
-                    console.warn(`❌ Failed to delete ${request.id}:`, response.status, errorText);
-                    errors.push(`${request.id}: ${response.status}`);
-                }
-            } catch (error) {
-                console.warn(`❌ Error deleting ${request.id}:`, error);
-                errors.push(`${request.id}: ${error.message}`);
-            }
-        }
-
-        console.log(`🎯 Deletion results: ${deletedCount} deleted, ${errors.length} failed`);
-
-        let finalDeletedCount = deletedCount;
-        if (deletedCount === 0 && errors.length > 0) {
-            console.warn('⚠️ All deletions failed, clearing locally only');
-            finalDeletedCount = refreshedRequestsToDelete.length;
-        }
-
-        // Remove from local array
-        requests = requests.filter(request => !statusesToRemove.includes(request.status));
-
-        // Remove from local array
-        requests = requests.filter(request => !statusesToRemove.includes(request.status));
+        // Remove from local array for immediate UI update
+        requests = requests.filter(request => !statusesToClear.includes(request.status));
 
         // Close modal and update UI 
         closeRequestsModal();
         updateStats();
 
-        // Update dashboard stats immediately (don't reload from backend)
-        updateStats();
+        showMessage(`✅ Cleared ${requestsToClear.length} ${status.toLowerCase()} request${requestsToClear.length !== 1 ? 's' : ''} from your view!`, 'success');
+        console.log(`✅ Successfully cleared ${requestsToClear.length} requests from view`);
 
-        showMessage(`✅ Permanently deleted ${finalDeletedCount} ${status.toLowerCase()} request${finalDeletedCount !== 1 ? 's' : ''} to save storage space!`, 'success');
-        console.log(`✅ Successfully deleted ${finalDeletedCount} requests permanently from database`);
+        // Reset button state
+        if (clearBtn && originalText) {
+            clearBtn.innerHTML = originalText;
+            clearBtn.disabled = false;
+        }
 
     } catch (error) {
         console.error('Error clearing request history:', error);
@@ -864,39 +815,70 @@ function resetClearedHistory() {
     showMessage('Clear history now permanently deletes requests from the database. There is no reset functionality.', 'info');
 }
 
+// ===== CLEARED REQUESTS MANAGEMENT =====
+
+/**
+ * Get cleared request IDs from localStorage
+ */
+function getClearedRequests() {
+    try {
+        const cleared = localStorage.getItem('officeflow_cleared_requests');
+        return cleared ? new Set(JSON.parse(cleared)) : new Set();
+    } catch (error) {
+        console.warn('Error loading cleared requests:', error);
+        return new Set();
+    }
+}
+
+/**
+ * Save cleared request IDs to localStorage
+ */
+function saveClearedRequests(clearedSet) {
+    try {
+        localStorage.setItem('officeflow_cleared_requests', JSON.stringify([...clearedSet]));
+    } catch (error) {
+        console.error('Error saving cleared requests:', error);
+    }
+}
+
+/**
+ * Check if a request has been cleared by the user
+ */
+function isRequestCleared(requestId) {
+    const clearedRequests = getClearedRequests();
+    return clearedRequests.has(requestId);
+}
+
+/**
+ * Reset cleared history (show all requests again)
+ */
+function resetClearedRequestHistory() {
+    if (confirm('Show all previously cleared requests again? This will make them visible in your dashboard.')) {
+        localStorage.removeItem('officeflow_cleared_requests');
+
+        // Reload requests to show all again
+        loadUserRequests().then(() => {
+            updateStats();
+            showMessage('All cleared requests are now visible again!', 'success');
+        });
+    }
+}
+
 /**
  * Close/dismiss an individual request from the user's view
  */
 async function closeIndividualRequest(requestId, status) {
-    if (!confirm('Delete this request permanently from the database? This action cannot be undone.')) {
+    if (!confirm('Remove this request from your view? It will stay hidden even after refresh.')) {
         return;
     }
 
     try {
-        console.log(`🗑️ Deleting individual request: ${requestId}`);
+        console.log(`🗑️ Clearing individual request from view: ${requestId}`);
 
-        const token = localStorage.getItem('authToken');
-        if (!token) {
-            throw new Error('No authentication token found');
-        }
-
-        // Try to delete from backend first
-        const response = await fetch(`${getApiUrl()}/api/requests/${requestId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }
-        });
-
-        console.log(`📡 Individual delete response for ${requestId}:`, response.status);
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`❌ Failed to delete request ${requestId} from backend:`, response.status, errorText);
-            throw new Error(`Failed to delete from database: ${response.status}`);
-        }
-
-        console.log(`✅ Successfully deleted request ${requestId} from database`);
+        // Add to cleared requests in localStorage
+        const clearedRequests = getClearedRequests();
+        clearedRequests.add(requestId);
+        saveClearedRequests(clearedRequests);
 
         // Remove from local array
         const originalLength = requests.length;
@@ -947,7 +929,7 @@ async function closeIndividualRequest(requestId, status) {
             updateStats();
 
             showMessage(`✅ Request removed from your view`, 'success');
-            console.log(`✅ Successfully removed request ${requestId} from local view`);
+            console.log(`✅ Successfully removed request ${requestId} from view`);
         } else {
             showMessage('Request not found', 'warning');
         }
@@ -1004,6 +986,9 @@ function updateDashboardStats() {
 // Make functions available globally
 window.showRequestsPopup = showRequestsPopup;
 window.closeRequestsModal = closeRequestsModal;
+window.clearRequestHistory = clearRequestHistory;
+window.closeIndividualRequest = closeIndividualRequest;
+window.resetClearedRequestHistory = resetClearedRequestHistory;
 
 /**
  * Format date for display based on user preferences
@@ -2429,6 +2414,7 @@ function initNotificationSettings() {
  */
 function initPrivacySettings() {
     const privacyInputs = document.querySelectorAll('#privacy input[type="checkbox"]');
+    const resetClearedHistoryBtn = document.getElementById('resetClearedHistory');
 
     privacyInputs.forEach(input => {
         input.addEventListener('change', function () {
@@ -2441,6 +2427,11 @@ function initPrivacySettings() {
             showMessage(`${enabled ? 'Enabled' : 'Disabled'} ${setting.replace(/([A-Z])/g, ' $1').toLowerCase()}`, 'info');
         });
     });
+
+    // Reset cleared history button
+    if (resetClearedHistoryBtn) {
+        resetClearedHistoryBtn.addEventListener('click', resetClearedRequestHistory);
+    }
 }
 
 /**
@@ -3237,8 +3228,13 @@ async function loadUserRequests() {
 
         if (response.ok) {
             const data = await response.json();
-            requests = data.requests || [];
-            console.log('Successfully loaded requests:', requests.length);
+            const allRequests = data.requests || [];
+
+            // Filter out requests that user has cleared from their view
+            const clearedRequests = getClearedRequests();
+            requests = allRequests.filter(request => !clearedRequests.has(request.id));
+
+            console.log(`Successfully loaded ${allRequests.length} requests, ${clearedRequests.size} cleared from view, showing ${requests.length}`);
 
             // Update dashboard stats after loading requests
             updateDashboardStats();

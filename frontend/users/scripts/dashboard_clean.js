@@ -38,6 +38,13 @@ let filteredRequests = [];
 
 // ===== UTILITY FUNCTIONS =====
 
+/**
+ * Get API base URL based on environment
+ */
+function getApiUrl() {
+    return window.APP_CONFIG?.API_BASE_URL || 'http://localhost:3000';
+}
+
 function generateRequestId() {
     const timestamp = Date.now();
     const random = Math.floor(Math.random() * 1000);
@@ -184,7 +191,7 @@ async function handleFormSubmit(e) {
         const token = localStorage.getItem('authToken');
         console.log('🔑 Token available:', !!token);
 
-        const response = await fetch('http://localhost:3000/api/requests', {
+        const response = await fetch(`${getApiUrl()}/api/requests`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

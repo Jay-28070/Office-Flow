@@ -387,7 +387,7 @@ async function createAndTestNotification() {
         console.log('Creating test request...');
 
         // Create a test request
-        const createResponse = await fetch('http://localhost:3000/api/debug/create-test-request', {
+        const createResponse = await fetch(`${getApiUrl()}/api/debug/create-test-request`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -407,7 +407,7 @@ async function createAndTestNotification() {
         setTimeout(async () => {
             console.log('Simulating status change...');
 
-            const statusResponse = await fetch('http://localhost:3000/api/debug/simulate-status-change', {
+            const statusResponse = await fetch(`${getApiUrl()}/api/debug/simulate-status-change`, {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -448,7 +448,7 @@ async function cleanupTestRequests() {
 
         console.log('Cleaning up test requests...');
 
-        const response = await fetch('http://localhost:3000/api/debug/cleanup-test-requests', {
+        const response = await fetch(`${getApiUrl()}/api/debug/cleanup-test-requests`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -1088,7 +1088,7 @@ async function handleFormSubmit(e) {
     try {
         // Submit request to backend API
         const token = localStorage.getItem('authToken');
-        const response = await fetch('http://localhost:3000/api/requests', {
+        const response = await fetch(`${getApiUrl()}/api/requests`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1528,7 +1528,7 @@ async function loadCompanySettingsUser() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
-        const res = await fetch('http://localhost:3000/api/company/settings', {
+        const res = await fetch(`${getApiUrl()}/api/company/settings`, {
             headers,
             signal: controller.signal
         });
@@ -1698,7 +1698,7 @@ async function handleProfileSubmit(e) {
             if (jobTitle !== currentUser.jobTitle) updateData.jobTitle = jobTitle;
             if (department && department !== currentUser.department) updateData.department = department;
 
-            const response = await fetch(`http://localhost:3000/api/users/${user.id}/profile`, {
+            const response = await fetch(`${getApiUrl()}/api/users/${user.id}/profile`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
@@ -2232,7 +2232,7 @@ async function checkProfileCompletion() {
 async function loadCompanyDepartments() {
     try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch('http://localhost:3000/api/company/settings', {
+        const response = await fetch(`${getApiUrl()}/api/company/settings`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -2314,7 +2314,7 @@ async function saveProfileFromPopup() {
 
         console.log('Saving profile:', { userId: user.id, department, jobTitle });
 
-        const response = await fetch(`http://localhost:3000/api/users/${user.id}/profile`, {
+        const response = await fetch(`${getApiUrl()}/api/users/${user.id}/profile`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -2398,7 +2398,7 @@ async function requestAdminAccess() {
 
     try {
         const token = localStorage.getItem('authToken');
-        const response = await fetch('http://localhost:3000/api/request-admin', {
+        const response = await fetch(`${getApiUrl()}/api/request-admin`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -2528,7 +2528,7 @@ async function handleFormSubmit(e) {
     try {
         // Submit request to backend API
         const token = localStorage.getItem('authToken');
-        const response = await fetch('http://localhost:3000/api/requests', {
+        const response = await fetch(`${getApiUrl()}/api/requests`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -2841,7 +2841,7 @@ async function loadUserRequests() {
         }
 
         console.log('Making API call to load requests...');
-        const response = await fetch('http://localhost:3000/api/requests', {
+        const response = await fetch(`${getApiUrl()}/api/requests`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 

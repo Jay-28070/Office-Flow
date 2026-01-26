@@ -517,6 +517,9 @@ function showRequestsPopup(status) {
 
     console.log(`Found ${filteredRequests.length} ${status} requests`);
 
+    // Determine if this status supports clearing history
+    const canClearHistory = ['Completed', 'Rejected', 'Pending'].includes(status);
+
     // Create modal
     const modal = document.createElement('div');
     modal.className = 'requests-modal';
@@ -555,6 +558,12 @@ function showRequestsPopup(status) {
         }
             </div>
             <div class="requests-modal-footer">
+                ${canClearHistory && filteredRequests.length > 0 ? `
+                    <button class="btn btn-danger" onclick="clearRequestHistory('${status}')" title="Clear all ${status.toLowerCase()} requests from your history">
+                        <i class="fas fa-trash"></i>
+                        Clear History
+                    </button>
+                ` : ''}
                 <button class="btn btn-primary" onclick="closeRequestsModal()">
                     Close
                 </button>
@@ -579,6 +588,40 @@ function closeRequestsModal() {
             modal.remove();
             document.body.style.overflow = '';
         }, 300);
+    }
+}
+
+/**
+ * Clear request history for a specific status
+ */
+function clearRequestHistory(status) {
+    if (!confirm(`Are you sure you want to clear all ${status.toLowerCase()} requests from your history? This action cannot be undone.`)) {
+        return;
+    }
+
+    try {
+        // Filter out requests with the specified status
+        // For 'Completed', also remove 'Approved' requests since they're shown together
+        const statusesToRemove = status === 'Completed' ? ['Completed', 'Approved'] : [status];
+
+        const originalCount = requests.length;
+        requests = requests.filter(request => !statusesToRemove.includes(request.status));
+        const removedCount = originalCount - requests.length;
+
+        // Update the UI
+        updateStats();
+        loadUserRequests();
+
+        // Close the modal
+        closeRequestsModal();
+
+        // Show success message
+        showMessage(`Successfully cleared ${removedCount} ${status.toLowerCase()} request${removedCount !== 1 ? 's' : ''} from your history.`, 'success');
+
+        console.log(`Cleared ${removedCount} ${status} requests from history`);
+    } catch (error) {
+        console.error('Error clearing request history:', error);
+        showMessage('Failed to clear request history. Please try again.', 'error');
     }
 }
 

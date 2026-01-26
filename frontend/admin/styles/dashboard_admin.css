@@ -3929,6 +3929,7 @@ ebar close button on desktop */
     color: var(--gray-600);
     font-size: 0.95rem;
     margin-top: 0.5rem;
+    margin-bottom: 1rem;
     line-height: 1.5;
 }
 
@@ -3936,6 +3937,7 @@ ebar close button on desktop */
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1rem;
+    margin-top: 1.5rem;
     margin-bottom: 2rem;
 }
 
@@ -4027,6 +4029,7 @@ ebar close button on desktop */
 }
 
 .unassigned-requests-container {
+    margin-top: 2rem;
     background: var(--white);
     border-radius: 12px;
     border: 1px solid var(--gray-200);

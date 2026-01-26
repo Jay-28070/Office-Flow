@@ -1019,10 +1019,12 @@ app.get('/api/requests', authenticateFirebaseToken, async (req, res) => {
                 .get();
         }
 
-        const requests = requestsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
+        const requests = requestsSnapshot.docs
+            .map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }))
+            .filter(request => request.status !== 'DELETED'); // Filter out deleted requests
 
         // Sort by dateSubmitted in JavaScript (newest first)
         requests.sort((a, b) => {
@@ -1386,7 +1388,7 @@ app.put('/api/requests/:requestId/status', authenticateFirebaseToken, requireAdm
         const { requestId } = req.params;
         const { status, comments } = req.body;
 
-        if (!['Pending', 'In Progress', 'Completed', 'Rejected'].includes(status)) {
+        if (!['Pending', 'In Progress', 'Completed', 'Rejected', 'DELETED'].includes(status)) {
             return res.status(400).json({ message: 'Invalid status', success: false });
         }
 

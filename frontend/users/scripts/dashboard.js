@@ -696,6 +696,35 @@ async function clearRequestHistory(status) {
             }
         }
 
+        console.log(`🗑️ Deleting ${requestsToDelete.length} requests from backend database...`);
+
+        // Delete each request individually by setting status to DELETED
+        let deletedCount = 0;
+        for (const request of requestsToDelete) {
+            try {
+                const response = await fetch(`${getApiUrl()}/api/requests/${request.id}/status`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        status: 'DELETED',
+                        comments: 'Cleared by user via Clear History feature'
+                    })
+                });
+
+                if (response.ok) {
+                    deletedCount++;
+                    console.log(`✅ Deleted request ${request.id} from database`);
+                } else {
+                    console.warn(`❌ Failed to delete request ${request.id}:`, response.status);
+                }
+            } catch (error) {
+                console.warn(`❌ Error deleting request ${request.id}:`, error);
+            }
+        }
+
         // Remove from local array
         requests = requests.filter(request => !statusesToRemove.includes(request.status));
 
@@ -703,7 +732,7 @@ async function clearRequestHistory(status) {
         closeRequestsModal();
         updateStats();
 
-        // Reload from backend to confirm changes
+        // Reload from backend to confirm deletion
         setTimeout(() => loadUserRequests(), 1000);
 
         showMessage(`🎉 Successfully deleted ${deletedCount} ${status.toLowerCase()} request${deletedCount !== 1 ? 's' : ''} from the database!`, 'success');

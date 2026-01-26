@@ -669,61 +669,27 @@ async function clearRequestHistory(status) {
 
         console.log(`🗑️ Deleting ${requestsToDelete.length} requests from backend database...`);
 
-        // Delete each request individually using the existing status endpoint
-        let deletedCount = 0;
-        for (const request of requestsToDelete) {
-            try {
-                const response = await fetch(`${getApiUrl()}/api/requests/${request.id}/status`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        status: 'DELETED',
-                        adminNotes: 'Cleared by user via Clear History feature'
-                    })
-                });
+        // Use the proper bulk delete endpoint for users
+        const response = await fetch(`${getApiUrl()}/api/requests/bulk-delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                status: status
+            })
+        });
 
-                if (response.ok) {
-                    deletedCount++;
-                    console.log(`✅ Deleted request ${request.id} from database`);
-                } else {
-                    console.warn(`❌ Failed to delete request ${request.id}:`, response.status);
-                }
-            } catch (error) {
-                console.warn(`❌ Error deleting request ${request.id}:`, error);
-            }
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `Server error: ${response.status}`);
         }
 
-        console.log(`🗑️ Deleting ${requestsToDelete.length} requests from backend database...`);
+        const result = await response.json();
+        const deletedCount = result.deletedCount || 0;
 
-        // Delete each request individually by setting status to DELETED
-        let deletedCount = 0;
-        for (const request of requestsToDelete) {
-            try {
-                const response = await fetch(`${getApiUrl()}/api/requests/${request.id}/status`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        status: 'DELETED',
-                        comments: 'Cleared by user via Clear History feature'
-                    })
-                });
-
-                if (response.ok) {
-                    deletedCount++;
-                    console.log(`✅ Deleted request ${request.id} from database`);
-                } else {
-                    console.warn(`❌ Failed to delete request ${request.id}:`, response.status);
-                }
-            } catch (error) {
-                console.warn(`❌ Error deleting request ${request.id}:`, error);
-            }
-        }
+        console.log(`✅ Successfully deleted ${deletedCount} requests from database`);
 
         // Remove from local array
         requests = requests.filter(request => !statusesToRemove.includes(request.status));

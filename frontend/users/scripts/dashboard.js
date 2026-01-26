@@ -787,32 +787,43 @@ async function clearRequestHistory(status) {
             return;
         }
 
-        console.log(`🗑️ Clearing ${refreshedRequestsToDelete.length} requests from your view...`);
+        console.log(`🗑️ Permanently deleting ${refreshedRequestsToDelete.length} requests from database...`);
 
-        // Use the clear-history endpoint
-        const response = await fetch(`${getApiUrl()}/api/requests/clear-history`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                status: status
-            })
-        });
+        // Since clear-history endpoint doesn't exist in production, delete individually
+        let deletedCount = 0;
+        const errors = [];
 
-        console.log('📡 Clear-history response status:', response.status);
+        for (const request of refreshedRequestsToDelete) {
+            try {
+                console.log(`🔄 Deleting request ${request.id} permanently...`);
+                const response = await fetch(`${getApiUrl()}/api/requests/${request.id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
 
-        let finalDeletedCount = 0;
-        if (response.ok) {
-            const result = await response.json();
-            finalDeletedCount = result.deletedCount || 0;
-            console.log(`✅ Successfully deleted ${finalDeletedCount} requests permanently from database`);
-        } else {
-            // Log the actual error for debugging
-            const errorText = await response.text();
-            console.error('❌ Backend deletion failed:', response.status, errorText);
-            console.warn('⚠️ Backend deletion failed, clearing locally only');
+                console.log(`📡 Delete response for ${request.id}:`, response.status);
+
+                if (response.ok) {
+                    deletedCount++;
+                    console.log(`✅ Permanently deleted request ${request.id} from database`);
+                } else {
+                    const errorText = await response.text();
+                    console.warn(`❌ Failed to delete ${request.id}:`, response.status, errorText);
+                    errors.push(`${request.id}: ${response.status}`);
+                }
+            } catch (error) {
+                console.warn(`❌ Error deleting ${request.id}:`, error);
+                errors.push(`${request.id}: ${error.message}`);
+            }
+        }
+
+        console.log(`🎯 Deletion results: ${deletedCount} deleted, ${errors.length} failed`);
+
+        let finalDeletedCount = deletedCount;
+        if (deletedCount === 0 && errors.length > 0) {
+            console.warn('⚠️ All deletions failed, clearing locally only');
             finalDeletedCount = refreshedRequestsToDelete.length;
         }
 
@@ -822,7 +833,7 @@ async function clearRequestHistory(status) {
         // Remove from local array
         requests = requests.filter(request => !statusesToRemove.includes(request.status));
 
-        // Close modal and update UI
+        // Close modal and update UI 
         closeRequestsModal();
         updateStats();
 

@@ -669,9 +669,9 @@ async function clearRequestHistory(status) {
 
         console.log(`🗑️ Deleting ${requestsToDelete.length} requests from backend database...`);
 
-        // Use the proper bulk delete endpoint for users
-        const response = await fetch(`${getApiUrl()}/api/requests/bulk-delete`, {
-            method: 'DELETE',
+        // Use the proper clear-history endpoint for users
+        const response = await fetch(`${getApiUrl()}/api/requests/clear-history`, {
+            method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`

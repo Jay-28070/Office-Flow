@@ -132,6 +132,9 @@
                 <section class="dashboard-section">
                     <div class="section-header">
                         <h2><i class="fas fa-user-shield"></i> Admin Requests</h2>
+                        <p class="section-description">
+                            Review and approve requests from employees who want to become department administrators.
+                        </p>
                     </div>
                     <div class="requests-container" id="adminRequests">
                         <p class="empty-state">No pending admin requests</p>
@@ -188,6 +191,10 @@
                 <section class="dashboard-section">
                     <div class="section-header">
                         <h2><i class="fas fa-users"></i> All Staff Members</h2>
+                        <p class="section-description">
+                            Manage all employees in your organization. Promote users to admin roles or remove admin
+                            privileges as needed.
+                        </p>
                         <div class="header-actions-group">
                             <button class="btn-danger" id="bulkRemoveBtn" onclick="bulkRemoveAdmins()"
                                 style="display: none;">
@@ -270,149 +277,168 @@
 
             <!-- Company Settings Tab -->
             <div id="settings-tab" class="tab-content">
-                <div class="settings-section">
-                    <h3 class="settings-section-title" style="color: #1f2937 !important;">
-                        <i class="fas fa-building"></i>
-                        Company Information
-                    </h3>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <label>Company Name</label>
-                            <p id="companyName">Loading...</p>
-                        </div>
-                        <div class="info-item">
-                            <label>Company Code</label>
-                            <p id="companyCode">Loading...</p>
-                        </div>
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-cog"></i> Company Settings</h2>
+                        <p class="section-description">
+                            Configure company-wide settings including departments, leave policies, and organizational
+                            structure.
+                        </p>
                     </div>
-                </div>
 
-                <div class="settings-section">
-                    <h3 class="settings-section-title" style="color: #1f2937 !important;">
-                        <i class="fas fa-calendar-alt"></i>
-                        Leave Balance Settings
-                    </h3>
-                    <form id="leaveBalanceForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="annualLeave">Annual Leave (Days)</label>
-                                <input type="number" id="annualLeave" min="0" max="365" required>
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">
+                            <i class="fas fa-building"></i>
+                            Company Information
+                        </h3>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <label>Company Name</label>
+                                <p id="companyName">Loading...</p>
                             </div>
-                            <div class="form-group">
-                                <label for="sickLeave">Sick Leave (Days)</label>
-                                <input type="number" id="sickLeave" min="0" max="365" required>
+                            <div class="info-item">
+                                <label>Company Code</label>
+                                <p id="companyCode">Loading...</p>
                             </div>
                         </div>
-                        <button type="submit" class="btn-primary">
-                            <i class="fas fa-save"></i> Save Settings
-                        </button>
-                    </form>
-                </div>
+                    </div>
 
-                <div class="settings-section">
-                    <h3 class="settings-section-title" style="color: #1f2937 !important;">
-                        <i class="fas fa-sitemap"></i>
-                        Department Management
-                    </h3>
-                    <p style="color: #4b5563 !important; margin-bottom: 1rem;">
-                        Customize departments for your company. Employees can be assigned to these departments.
-                    </p>
-                    <div id="departmentsList" class="departments-list">
-                        <!-- Departments will be loaded here -->
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">
+                            <i class="fas fa-calendar-alt"></i>
+                            Leave Balance Settings
+                        </h3>
+                        <form id="leaveBalanceForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="annualLeave">Annual Leave (Days)</label>
+                                    <input type="number" id="annualLeave" min="0" max="365" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="sickLeave">Sick Leave (Days)</label>
+                                    <input type="number" id="sickLeave" min="0" max="365" required>
+                                </div>
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-save"></i> Save Settings
+                            </button>
+                        </form>
                     </div>
-                    <div class="add-department-form">
-                        <input type="text" id="newDepartmentInput" placeholder="Enter new department name" />
-                        <button type="button" class="btn-primary" id="addDepartmentBtn">
-                            <i class="fas fa-plus"></i> Add Department
-                        </button>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">
+                            <i class="fas fa-sitemap"></i>
+                            Department Management
+                        </h3>
+                        <p class="section-description">
+                            Customize departments for your company. Employees can be assigned to these departments.
+                        </p>
+                        <div id="departmentsList" class="departments-list">
+                            <!-- Departments will be loaded here -->
+                        </div>
+                        <div class="add-department-form">
+                            <input type="text" id="newDepartmentInput" placeholder="Enter new department name" />
+                            <button type="button" class="btn-primary" id="addDepartmentBtn">
+                                <i class="fas fa-plus"></i> Add Department
+                            </button>
+                        </div>
                     </div>
-                </div>
+                </section>
             </div>
 
             <!-- Profile Settings Tab -->
             <div id="profile-tab" class="tab-content">
-                <div class="settings-section">
-                    <h3 class="settings-section-title" style="color: #1f2937 !important;">
-                        <i class="fas fa-user"></i>
-                        Personal Information
-                    </h3>
-                    <form id="profileForm">
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="profileName">Full Name</label>
-                                <input type="text" id="profileName" required>
+                <section class="dashboard-section">
+                    <div class="section-header">
+                        <h2><i class="fas fa-user"></i> Profile Settings</h2>
+                        <p class="section-description">
+                            Manage your personal information, theme preferences, and account settings.
+                        </p>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">
+                            <i class="fas fa-user"></i>
+                            Personal Information
+                        </h3>
+                        <form id="profileForm">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="profileName">Full Name</label>
+                                    <input type="text" id="profileName" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profileEmail">Email</label>
+                                    <input type="email" id="profileEmail" disabled>
+                                </div>
                             </div>
-                            <div class="form-group">
-                                <label for="profileEmail">Email</label>
-                                <input type="email" id="profileEmail" disabled>
-                            </div>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-save"></i> Save Profile
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">
+                            <i class="fas fa-moon"></i>
+                            Theme
+                        </h3>
+                        <div class="theme-options">
+                            <label class="theme-option">
+                                <input type="radio" name="profile-theme" value="light" checked>
+                                <div class="theme-preview light-theme">
+                                    <div class="theme-header"></div>
+                                    <div class="theme-content"></div>
+                                </div>
+                                <span class="theme-name">Light Mode</span>
+                            </label>
+                            <label class="theme-option">
+                                <input type="radio" name="profile-theme" value="dark">
+                                <div class="theme-preview dark-theme">
+                                    <div class="theme-header"></div>
+                                    <div class="theme-content"></div>
+                                </div>
+                                <span class="theme-name">Dark Mode</span>
+                            </label>
                         </div>
-                        <button type="submit" class="btn-primary">
-                            <i class="fas fa-save"></i> Save Profile
-                        </button>
-                    </form>
-                </div>
-
-                <div class="settings-section">
-                    <h3 class="settings-section-title" style="color: #1f2937 !important;">
-                        <i class="fas fa-moon"></i>
-                        Theme
-                    </h3>
-                    <div class="theme-options">
-                        <label class="theme-option">
-                            <input type="radio" name="profile-theme" value="light" checked>
-                            <div class="theme-preview light-theme">
-                                <div class="theme-header"></div>
-                                <div class="theme-content"></div>
-                            </div>
-                            <span class="theme-name">Light Mode</span>
-                        </label>
-                        <label class="theme-option">
-                            <input type="radio" name="profile-theme" value="dark">
-                            <div class="theme-preview dark-theme">
-                                <div class="theme-header"></div>
-                                <div class="theme-content"></div>
-                            </div>
-                            <span class="theme-name">Dark Mode</span>
-                        </label>
                     </div>
-                </div>
 
-                <div class="settings-section">
-                    <h3 class="settings-section-title" style="color: #1f2937 !important;">
-                        <i class="fas fa-palette"></i>
-                        Color Scheme
-                    </h3>
-                    <div class="color-schemes">
-                        <label class="color-scheme-option">
-                            <input type="radio" name="profile-colorScheme" value="warm" checked>
-                            <div class="color-preview warm-preview">
-                                <div class="color-dot" style="background: #fb923c;"></div>
-                                <div class="color-dot" style="background: #fbbf24;"></div>
-                                <div class="color-dot" style="background: #f87171;"></div>
-                            </div>
-                            <span class="color-name">Warm</span>
-                        </label>
-                        <label class="color-scheme-option">
-                            <input type="radio" name="profile-colorScheme" value="cool">
-                            <div class="color-preview cool-preview">
-                                <div class="color-dot" style="background: #3b82f6;"></div>
-                                <div class="color-dot" style="background: #8b5cf6;"></div>
-                                <div class="color-dot" style="background: #06b6d4;"></div>
-                            </div>
-                            <span class="color-name">Cool</span>
-                        </label>
-                        <label class="color-scheme-option">
-                            <input type="radio" name="profile-colorScheme" value="nature">
-                            <div class="color-preview nature-preview">
-                                <div class="color-dot" style="background: #10b981;"></div>
-                                <div class="color-dot" style="background: #84cc16;"></div>
-                                <div class="color-dot" style="background: #f59e0b;"></div>
-                            </div>
-                            <span class="color-name">Nature</span>
-                        </label>
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">
+                            <i class="fas fa-palette"></i>
+                            Color Scheme
+                        </h3>
+                        <div class="color-schemes">
+                            <label class="color-scheme-option">
+                                <input type="radio" name="profile-colorScheme" value="warm" checked>
+                                <div class="color-preview warm-preview">
+                                    <div class="color-dot" style="background: #fb923c;"></div>
+                                    <div class="color-dot" style="background: #fbbf24;"></div>
+                                    <div class="color-dot" style="background: #f87171;"></div>
+                                </div>
+                                <span class="color-name">Warm</span>
+                            </label>
+                            <label class="color-scheme-option">
+                                <input type="radio" name="profile-colorScheme" value="cool">
+                                <div class="color-preview cool-preview">
+                                    <div class="color-dot" style="background: #3b82f6;"></div>
+                                    <div class="color-dot" style="background: #8b5cf6;"></div>
+                                    <div class="color-dot" style="background: #06b6d4;"></div>
+                                </div>
+                                <span class="color-name">Cool</span>
+                            </label>
+                            <label class="color-scheme-option">
+                                <input type="radio" name="profile-colorScheme" value="nature">
+                                <div class="color-preview nature-preview">
+                                    <div class="color-dot" style="background: #10b981;"></div>
+                                    <div class="color-dot" style="background: #84cc16;"></div>
+                                    <div class="color-dot" style="background: #f59e0b;"></div>
+                                </div>
+                                <span class="color-name">Nature</span>
+                            </label>
+                        </div>
                     </div>
-                </div>
+                </section>
             </div>
         </main>
     </div>

@@ -3,7 +3,7 @@ let allUsers = [];
 
 // API Base URL - uses environment detection
 function getApiBaseUrl() {
-    return window.APP_CONFIG?.API_BASE_URL || '${getApiBaseUrl()}';
+    return window.APP_CONFIG?.API_BASE_URL || 'http://localhost:3000';
 }
 
 function getToken() {
@@ -689,7 +689,7 @@ document.addEventListener('DOMContentLoaded', function () {
         submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Promoting...';
 
         try {
-            const response = await fetch('${getApiBaseUrl()}/api/promote-to-admin', {
+            const response = await fetch(`${getApiBaseUrl()}/api/promote-to-admin`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -765,7 +765,7 @@ function showTab(tabName, event) {
 async function loadCompanyInfo() {
     try {
         console.log('Loading company info...');
-        const response = await fetch('${getApiBaseUrl()}/api/company/settings', {
+        const response = await fetch(`${getApiBaseUrl()}/api/company/settings`, {
             headers: { 'Authorization': `Bearer ${getToken()}` }
         });
 
@@ -823,7 +823,7 @@ async function removeDepartment(deptName) {
 
     const updatedDepartments = companySettings.departments.filter(d => d !== deptName);
 
-    const response = await fetch('${getApiBaseUrl()}/api/company/settings', {
+    const response = await fetch(`${getApiBaseUrl()}/api/company/settings`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -859,7 +859,7 @@ document.getElementById('addDepartmentBtn')?.addEventListener('click', async () 
 
     const updatedDepartments = [...companySettings.departments, deptName];
 
-    const response = await fetch('${getApiBaseUrl()}/api/company/settings', {
+    const response = await fetch(`${getApiBaseUrl()}/api/company/settings`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -939,7 +939,7 @@ function showSuccessPopup(message) {
 
 document.getElementById('leaveBalanceForm')?.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const response = await fetch('${getApiBaseUrl()}/api/company/settings', {
+    const response = await fetch(`${getApiBaseUrl()}/api/company/settings`, {
         method: 'PUT',
         headers: {
             'Content-Type': 'application/json',
@@ -1198,7 +1198,7 @@ async function debugUnassignedRequests() {
         console.log('=== DEBUG: Testing unassigned requests API ===');
 
         // Test the debug endpoint first
-        const debugResponse = await fetch('${getApiBaseUrl()}/api/debug/requests', {
+        const debugResponse = await fetch(`${getApiBaseUrl()}/api/debug/requests`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1208,7 +1208,7 @@ async function debugUnassignedRequests() {
         }
 
         // Test the unassigned endpoint
-        const unassignedResponse = await fetch('${getApiBaseUrl()}/api/requests/unassigned', {
+        const unassignedResponse = await fetch(`${getApiBaseUrl()}/api/requests/unassigned`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1231,7 +1231,7 @@ async function createTestRequest() {
 
         console.log('=== Creating test request ===');
 
-        const response = await fetch('${getApiBaseUrl()}/api/debug/create-test-request', {
+        const response = await fetch(`${getApiBaseUrl()}/api/debug/create-test-request`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -1284,7 +1284,7 @@ async function loadDepartmentStatus() {
         const token = localStorage.getItem('authToken');
 
         // Get company settings to see all departments
-        const settingsResponse = await fetch('${getApiBaseUrl()}/api/company/settings', {
+        const settingsResponse = await fetch(`${getApiBaseUrl()}/api/company/settings`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1294,7 +1294,7 @@ async function loadDepartmentStatus() {
         const departments = settingsData.company.settings.departments || [];
 
         // Get all users to check which departments have admins
-        const usersResponse = await fetch('${getApiBaseUrl()}/api/company/users', {
+        const usersResponse = await fetch(`${getApiBaseUrl()}/api/company/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1304,7 +1304,7 @@ async function loadDepartmentStatus() {
         const users = usersData.users || [];
 
         // Get unassigned requests count per department
-        const requestsResponse = await fetch('${getApiBaseUrl()}/api/requests/unassigned', {
+        const requestsResponse = await fetch(`${getApiBaseUrl()}/api/requests/unassigned`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1636,7 +1636,7 @@ async function loadDepartmentStatus() {
         const token = localStorage.getItem('authToken');
 
         // Get company settings to see all departments
-        const settingsResponse = await fetch('${getApiBaseUrl()}/api/company/settings', {
+        const settingsResponse = await fetch(`${getApiBaseUrl()}/api/company/settings`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1646,7 +1646,7 @@ async function loadDepartmentStatus() {
         const departments = settingsData.company.settings.departments || [];
 
         // Get all users to check which departments have admins
-        const usersResponse = await fetch('${getApiBaseUrl()}/api/company/users', {
+        const usersResponse = await fetch(`${getApiBaseUrl()}/api/company/users`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1656,7 +1656,7 @@ async function loadDepartmentStatus() {
         const users = usersData.users || [];
 
         // Get unassigned requests count per department
-        const requestsResponse = await fetch('${getApiBaseUrl()}/api/requests/unassigned', {
+        const requestsResponse = await fetch(`${getApiBaseUrl()}/api/requests/unassigned`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -1748,7 +1748,7 @@ async function loadUnassignedRequestsList() {
         filteredUnassignedRequests = [];
 
         const token = localStorage.getItem('authToken');
-        const response = await fetch('${getApiBaseUrl()}/api/requests/unassigned', {
+        const response = await fetch(`${getApiBaseUrl()}/api/requests/unassigned`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 

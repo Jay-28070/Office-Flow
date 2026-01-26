@@ -771,6 +771,21 @@ async function clearRequestHistory(status) {
         }
 
         console.log(`🗑️ Deleting ${requestsToDelete.length} requests from backend database...`);
+        console.log('🔍 Request IDs to delete:', requestsToDelete.map(r => r.id));
+
+        // First, refresh requests from backend to make sure we have current data
+        console.log('🔄 Refreshing requests from backend before deletion...');
+        await loadUserRequests();
+
+        // Re-filter requests after refresh
+        const refreshedRequestsToDelete = requests.filter(request => statusesToRemove.includes(request.status));
+        console.log('🔍 Refreshed request IDs to delete:', refreshedRequestsToDelete.map(r => r.id));
+
+        if (refreshedRequestsToDelete.length === 0) {
+            showMessage('No requests to clear after refresh.', 'info');
+            closeRequestsModal();
+            return;
+        }
 
         // Try the bulk delete endpoint first
         let deletedCount = 0;
@@ -833,7 +848,7 @@ async function clearRequestHistory(status) {
                 const errors = [];
                 deletedCount = 0;
 
-                for (const request of requestsToDelete) {
+                for (const request of refreshedRequestsToDelete) {
                     try {
                         console.log(`🔄 Deleting individual request: ${request.id}`);
                         const response = await fetch(`${getApiUrl()}/api/requests/${request.id}`, {
@@ -869,6 +884,9 @@ async function clearRequestHistory(status) {
             }
         }
 
+        // Use the actual count of requests that were processed
+        const finalDeletedCount = deletedCount;
+
         // Remove from local array
         requests = requests.filter(request => !statusesToRemove.includes(request.status));
 
@@ -879,8 +897,8 @@ async function clearRequestHistory(status) {
         // Reload from backend to confirm deletion
         setTimeout(() => loadUserRequests(), 1000);
 
-        showMessage(`🎉 Successfully deleted ${deletedCount} ${status.toLowerCase()} request${deletedCount !== 1 ? 's' : ''} from the database!`, 'success');
-        console.log(`🎉 Successfully deleted ${deletedCount} requests from backend database`);
+        showMessage(`🎉 Successfully deleted ${finalDeletedCount} ${status.toLowerCase()} request${finalDeletedCount !== 1 ? 's' : ''} from the database!`, 'success');
+        console.log(`🎉 Successfully deleted ${finalDeletedCount} requests from backend database`);
 
     } catch (error) {
         console.error('Error clearing request history:', error);

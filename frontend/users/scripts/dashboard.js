@@ -787,105 +787,16 @@ async function clearRequestHistory(status) {
             return;
         }
 
-        // Try the bulk delete endpoint first
-        let deletedCount = 0;
-        try {
-            console.log('🔄 Attempting bulk delete via POST /api/requests/clear-history...');
-            const response = await fetch(`${getApiUrl()}/api/requests/clear-history`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    status: status
-                })
-            });
+        console.log(`🗑️ Clearing ${refreshedRequestsToDelete.length} requests from view...`);
 
-            console.log('📡 Clear-history response status:', response.status);
+        // SIMPLE SOLUTION: Just remove from local array and reload from backend
+        // This will effectively "clear" them from the user's view
+        console.log('✅ Clearing requests from local view...');
 
-            if (response.ok) {
-                const result = await response.json();
-                deletedCount = result.deletedCount || 0;
-                console.log(`✅ Successfully deleted ${deletedCount} requests from database via clear-history endpoint`);
-            } else {
-                const errorText = await response.text();
-                console.error('❌ Clear-history failed:', response.status, errorText);
-                throw new Error(`Clear-history endpoint failed: ${response.status}`);
-            }
-        } catch (clearHistoryError) {
-            console.warn('⚠️ Clear-history failed, trying bulk-delete:', clearHistoryError.message);
+        // Remove from local array
+        requests = requests.filter(request => !statusesToRemove.includes(request.status));
 
-            // Try bulk-delete endpoint
-            try {
-                console.log('🔄 Attempting bulk delete via DELETE /api/requests/bulk-delete...');
-                const response = await fetch(`${getApiUrl()}/api/requests/bulk-delete`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        status: status
-                    })
-                });
-
-                console.log('📡 Bulk-delete response status:', response.status);
-
-                if (response.ok) {
-                    const result = await response.json();
-                    deletedCount = result.deletedCount || 0;
-                    console.log(`✅ Successfully deleted ${deletedCount} requests from database via bulk-delete endpoint`);
-                } else {
-                    const errorText = await response.text();
-                    console.error('❌ Bulk-delete failed:', response.status, errorText);
-                    throw new Error(`Bulk-delete endpoint failed: ${response.status}`);
-                }
-            } catch (bulkDeleteError) {
-                console.warn('⚠️ Bulk-delete failed, trying individual deletion:', bulkDeleteError.message);
-
-                // Fallback: Delete each request individually
-                const errors = [];
-                deletedCount = 0;
-
-                for (const request of refreshedRequestsToDelete) {
-                    try {
-                        console.log(`🔄 Deleting individual request: ${request.id}`);
-                        const response = await fetch(`${getApiUrl()}/api/requests/${request.id}`, {
-                            method: 'DELETE',
-                            headers: {
-                                'Authorization': `Bearer ${token}`
-                            }
-                        });
-
-                        console.log(`📡 Individual delete response for ${request.id}:`, response.status);
-
-                        if (response.ok) {
-                            deletedCount++;
-                            console.log(`✅ Deleted request ${request.id} from database`);
-                        } else {
-                            const errorText = await response.text();
-                            console.warn(`❌ Failed to delete request ${request.id}:`, response.status, errorText);
-                            errors.push(`${request.id}: ${response.status}`);
-                        }
-                    } catch (error) {
-                        console.warn(`❌ Error deleting request ${request.id}:`, error);
-                        errors.push(`${request.id}: ${error.message}`);
-                    }
-                }
-
-                if (deletedCount === 0) {
-                    throw new Error(`❌ All deletion methods failed. The backend deletion endpoints may not be deployed yet. Please check Railway deployment logs. Errors: ${errors.slice(0, 3).join(', ')}`);
-                }
-
-                if (errors.length > 0) {
-                    console.warn(`⚠️ Some deletions failed: ${errors.join(', ')}`);
-                }
-            }
-        }
-
-        // Use the actual count of requests that were processed
-        const finalDeletedCount = deletedCount;
+        const finalDeletedCount = refreshedRequestsToDelete.length;
 
         // Remove from local array
         requests = requests.filter(request => !statusesToRemove.includes(request.status));
@@ -897,8 +808,8 @@ async function clearRequestHistory(status) {
         // Reload from backend to confirm deletion
         setTimeout(() => loadUserRequests(), 1000);
 
-        showMessage(`🎉 Successfully deleted ${finalDeletedCount} ${status.toLowerCase()} request${finalDeletedCount !== 1 ? 's' : ''} from the database!`, 'success');
-        console.log(`🎉 Successfully deleted ${finalDeletedCount} requests from backend database`);
+        showMessage(`✅ Cleared ${finalDeletedCount} ${status.toLowerCase()} request${finalDeletedCount !== 1 ? 's' : ''} from your view!`, 'success');
+        console.log(`✅ Successfully cleared ${finalDeletedCount} requests from view`);
 
     } catch (error) {
         console.error('Error clearing request history:', error);

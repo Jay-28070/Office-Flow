@@ -525,6 +525,104 @@ fadeOutStyle.textContent = `
 `;
 document.head.appendChild(fadeOutStyle);
 
+// Add styles for individual request close buttons
+const requestModalStyles = document.createElement('style');
+requestModalStyles.id = 'request-modal-styles';
+requestModalStyles.textContent = `
+    .modal-request-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+        border-left: 4px solid #e5e7eb;
+        background: #f9fafb;
+        position: relative;
+    }
+
+    .modal-request-item.completed,
+    .modal-request-item.approved {
+        border-left-color: #22c55e;
+        background: #f0fdf4;
+    }
+
+    .modal-request-item.pending {
+        border-left-color: #f59e0b;
+        background: #fefce8;
+    }
+
+    .modal-request-item.rejected {
+        border-left-color: #ef4444;
+        background: #fef2f2;
+    }
+
+    .modal-request-content {
+        flex: 1;
+    }
+
+    .modal-request-actions {
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+
+    .btn-close-request {
+        background: none;
+        border: none;
+        color: #6b7280;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s;
+        font-size: 0.9rem;
+    }
+
+    .btn-close-request:hover {
+        background: rgba(239, 68, 68, 0.1);
+        color: #ef4444;
+        transform: scale(1.1);
+    }
+
+    .btn-close-request:active {
+        transform: scale(0.95);
+    }
+
+    .modal-request-title {
+        margin: 0 0 0.5rem 0;
+        color: #1f2937;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .modal-request-meta {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .modal-request-meta span {
+        color: #6b7280;
+        font-size: 0.85rem;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .modal-request-description {
+        margin: 0;
+        color: #4b5563;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+`;
+document.head.appendChild(requestModalStyles);
+
 // ===== UTILITY FUNCTIONS =====
 
 /**
@@ -575,7 +673,7 @@ function showRequestsPopup(status) {
             <div class="requests-modal-body">
                 ${filteredRequests.length > 0 ?
             filteredRequests.map(request => `
-                        <div class="modal-request-item">
+                        <div class="modal-request-item" data-request-id="${request.id}">
                             <div class="modal-request-icon ${status.toLowerCase()}">
                                 <i class="fas ${getStatusIcon(status)}"></i>
                             </div>
@@ -587,6 +685,11 @@ function showRequestsPopup(status) {
                                     <span><i class="fas fa-flag"></i> ${request.priority || 'Normal'}</span>
                                 </div>
                                 <p class="modal-request-description">${request.description || 'No description provided'}</p>
+                            </div>
+                            <div class="modal-request-actions">
+                                <button class="btn-close-request" onclick="closeIndividualRequest('${request.id}', '${status}')" title="Remove this request from your view">
+                                    <i class="fas fa-times"></i>
+                                </button>
                             </div>
                         </div>
                     `).join('') :
@@ -668,29 +771,103 @@ async function clearRequestHistory(status) {
         }
 
         console.log(`🗑️ Deleting ${requestsToDelete.length} requests from backend database...`);
-        console.log('🔍 DEBUG: About to call clear-history endpoint with POST method');
 
-        // Use the proper clear-history endpoint for users
-        const response = await fetch(`${getApiUrl()}/api/requests/clear-history?v=2&t=${Date.now()}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                status: status
-            })
-        });
+        // Try the bulk delete endpoint first
+        let deletedCount = 0;
+        try {
+            console.log('🔄 Attempting bulk delete via POST /api/requests/clear-history...');
+            const response = await fetch(`${getApiUrl()}/api/requests/clear-history`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    status: status
+                })
+            });
 
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.message || `Server error: ${response.status}`);
+            console.log('📡 Clear-history response status:', response.status);
+
+            if (response.ok) {
+                const result = await response.json();
+                deletedCount = result.deletedCount || 0;
+                console.log(`✅ Successfully deleted ${deletedCount} requests from database via clear-history endpoint`);
+            } else {
+                const errorText = await response.text();
+                console.error('❌ Clear-history failed:', response.status, errorText);
+                throw new Error(`Clear-history endpoint failed: ${response.status}`);
+            }
+        } catch (clearHistoryError) {
+            console.warn('⚠️ Clear-history failed, trying bulk-delete:', clearHistoryError.message);
+
+            // Try bulk-delete endpoint
+            try {
+                console.log('🔄 Attempting bulk delete via DELETE /api/requests/bulk-delete...');
+                const response = await fetch(`${getApiUrl()}/api/requests/bulk-delete`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        status: status
+                    })
+                });
+
+                console.log('📡 Bulk-delete response status:', response.status);
+
+                if (response.ok) {
+                    const result = await response.json();
+                    deletedCount = result.deletedCount || 0;
+                    console.log(`✅ Successfully deleted ${deletedCount} requests from database via bulk-delete endpoint`);
+                } else {
+                    const errorText = await response.text();
+                    console.error('❌ Bulk-delete failed:', response.status, errorText);
+                    throw new Error(`Bulk-delete endpoint failed: ${response.status}`);
+                }
+            } catch (bulkDeleteError) {
+                console.warn('⚠️ Bulk-delete failed, trying individual deletion:', bulkDeleteError.message);
+
+                // Fallback: Delete each request individually
+                const errors = [];
+                deletedCount = 0;
+
+                for (const request of requestsToDelete) {
+                    try {
+                        console.log(`🔄 Deleting individual request: ${request.id}`);
+                        const response = await fetch(`${getApiUrl()}/api/requests/${request.id}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            }
+                        });
+
+                        console.log(`📡 Individual delete response for ${request.id}:`, response.status);
+
+                        if (response.ok) {
+                            deletedCount++;
+                            console.log(`✅ Deleted request ${request.id} from database`);
+                        } else {
+                            const errorText = await response.text();
+                            console.warn(`❌ Failed to delete request ${request.id}:`, response.status, errorText);
+                            errors.push(`${request.id}: ${response.status}`);
+                        }
+                    } catch (error) {
+                        console.warn(`❌ Error deleting request ${request.id}:`, error);
+                        errors.push(`${request.id}: ${error.message}`);
+                    }
+                }
+
+                if (deletedCount === 0) {
+                    throw new Error(`❌ All deletion methods failed. The backend deletion endpoints may not be deployed yet. Please check Railway deployment logs. Errors: ${errors.slice(0, 3).join(', ')}`);
+                }
+
+                if (errors.length > 0) {
+                    console.warn(`⚠️ Some deletions failed: ${errors.join(', ')}`);
+                }
+            }
         }
-
-        const result = await response.json();
-        const deletedCount = result.deletedCount || 0;
-
-        console.log(`✅ Successfully deleted ${deletedCount} requests from database`);
 
         // Remove from local array
         requests = requests.filter(request => !statusesToRemove.includes(request.status));
@@ -724,6 +901,100 @@ async function clearRequestHistory(status) {
  */
 function resetClearedHistory() {
     showMessage('Clear history now permanently deletes requests from the database. There is no reset functionality.', 'info');
+}
+
+/**
+ * Close/dismiss an individual request from the user's view
+ */
+async function closeIndividualRequest(requestId, status) {
+    if (!confirm('Delete this request permanently from the database? This action cannot be undone.')) {
+        return;
+    }
+
+    try {
+        console.log(`🗑️ Deleting individual request: ${requestId}`);
+
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
+
+        // Try to delete from backend first
+        const response = await fetch(`${getApiUrl()}/api/requests/${requestId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        console.log(`📡 Individual delete response for ${requestId}:`, response.status);
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ Failed to delete request ${requestId} from backend:`, response.status, errorText);
+            throw new Error(`Failed to delete from database: ${response.status}`);
+        }
+
+        console.log(`✅ Successfully deleted request ${requestId} from database`);
+
+        // Remove from local array
+        const originalLength = requests.length;
+        requests = requests.filter(request => request.id !== requestId);
+        const removed = originalLength - requests.length;
+
+        if (removed > 0) {
+            // Remove the item from the modal
+            const requestElement = document.querySelector(`[data-request-id="${requestId}"]`);
+            if (requestElement) {
+                requestElement.style.animation = 'fadeOut 0.3s ease-out';
+                setTimeout(() => {
+                    requestElement.remove();
+
+                    // Update the modal header count
+                    const modal = document.querySelector('.requests-modal');
+                    if (modal) {
+                        const remainingRequests = requests.filter(r =>
+                            r.status === status ||
+                            (status === 'Completed' && r.status === 'Approved')
+                        );
+                        const header = modal.querySelector('.requests-modal-header h3');
+                        if (header) {
+                            header.innerHTML = `
+                                <i class="fas ${getStatusIcon(status)}"></i>
+                                ${status} Requests (${remainingRequests.length})
+                            `;
+                        }
+
+                        // If no requests left, show empty state
+                        if (remainingRequests.length === 0) {
+                            const body = modal.querySelector('.requests-modal-body');
+                            if (body) {
+                                body.innerHTML = `
+                                    <div class="modal-empty-state">
+                                        <i class="fas ${getStatusIcon(status)}"></i>
+                                        <h3>No ${status} Requests</h3>
+                                        <p>You don't have any ${status.toLowerCase()} requests yet.</p>
+                                    </div>
+                                `;
+                            }
+                        }
+                    }
+                }, 300);
+            }
+
+            // Update dashboard stats
+            updateStats();
+
+            showMessage(`✅ Request removed from your view`, 'success');
+            console.log(`✅ Successfully removed request ${requestId} from local view`);
+        } else {
+            showMessage('Request not found', 'warning');
+        }
+
+    } catch (error) {
+        console.error('Error closing individual request:', error);
+        showMessage('Failed to remove request: ' + error.message, 'error');
+    }
 }
 
 /**

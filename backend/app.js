@@ -1233,6 +1233,52 @@ app.delete('/api/requests/bulk-delete', authenticateFirebaseToken, async (req, r
     }
 });
 
+// Delete individual request (User only - their own requests)
+app.delete('/api/requests/:requestId', authenticateFirebaseToken, async (req, res) => {
+    try {
+        const { requestId } = req.params;
+
+        console.log(`User ${req.user.userId} requesting to delete request ${requestId}`);
+
+        // Get the request to verify ownership
+        const requestDoc = await db.collection('requests').doc(requestId).get();
+
+        if (!requestDoc.exists) {
+            return res.status(404).json({
+                message: 'Request not found',
+                success: false
+            });
+        }
+
+        const requestData = requestDoc.data();
+
+        // Verify the user owns this request
+        if (requestData.userId !== req.user.userId) {
+            return res.status(403).json({
+                message: 'You can only delete your own requests',
+                success: false
+            });
+        }
+
+        // Delete the request
+        await db.collection('requests').doc(requestId).delete();
+
+        console.log(`Successfully deleted request ${requestId} for user ${req.user.userId}`);
+
+        res.status(200).json({
+            success: true,
+            message: 'Request deleted successfully',
+            requestId
+        });
+    } catch (error) {
+        console.error('Error deleting individual request:', error);
+        res.status(500).json({
+            message: 'Failed to delete request',
+            success: false
+        });
+    }
+});
+
 // Test endpoint to create a sample request (temporary for testing)
 app.post('/api/debug/create-test-request', authenticateFirebaseToken, async (req, res) => {
     try {

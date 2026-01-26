@@ -558,15 +558,17 @@ function showRequestsPopup(status) {
         }
             </div>
             <div class="requests-modal-footer">
-                ${canClearHistory && filteredRequests.length > 0 ? `
-                    <button class="btn btn-danger" onclick="clearRequestHistory('${status}')" title="Clear all ${status.toLowerCase()} requests from your history">
-                        <i class="fas fa-trash"></i>
-                        Clear History
+                <div class="modal-footer-buttons">
+                    ${canClearHistory && filteredRequests.length > 0 ? `
+                        <button class="btn btn-danger" onclick="clearRequestHistory('${status}')" title="Clear all ${status.toLowerCase()} requests from your history">
+                            <i class="fas fa-trash"></i>
+                            Clear History
+                        </button>
+                    ` : ''}
+                    <button class="btn btn-primary" onclick="closeRequestsModal()">
+                        Close
                     </button>
-                ` : ''}
-                <button class="btn btn-primary" onclick="closeRequestsModal()">
-                    Close
-                </button>
+                </div>
             </div>
         </div>
     `;
@@ -594,35 +596,74 @@ function closeRequestsModal() {
 /**
  * Clear request history for a specific status
  */
-function clearRequestHistory(status) {
+/**
+ * Clear request history for a specific status
+ */
+async function clearRequestHistory(status) {
     if (!confirm(`Are you sure you want to clear all ${status.toLowerCase()} requests from your history? This action cannot be undone.`)) {
         return;
     }
 
+    // Show loading state
+    const clearBtn = document.querySelector('.btn-danger[onclick*="clearRequestHistory"]');
+    const originalText = clearBtn?.innerHTML;
+    if (clearBtn) {
+        clearBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Clearing...';
+        clearBtn.disabled = true;
+    }
+
     try {
-        // Filter out requests with the specified status
-        // For 'Completed', also remove 'Approved' requests since they're shown together
-        const statusesToRemove = status === 'Completed' ? ['Completed', 'Approved'] : [status];
+        const token = localStorage.getItem('authToken');
+        if (!token) {
+            throw new Error('No authentication token found');
+        }
 
-        const originalCount = requests.length;
-        requests = requests.filter(request => !statusesToRemove.includes(request.status));
-        const removedCount = originalCount - requests.length;
+        // Call the backend API to delete requests
+        const response = await fetch(`${getApiUrl()}/api/requests/bulk-delete`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ status })
+        });
 
-        // Update the UI
-        updateStats();
-        loadUserRequests();
+        const data = await response.json();
 
-        // Close the modal
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Failed to clear request history');
+        }
+
+        // Close the modal first
         closeRequestsModal();
 
-        // Show success message
-        showMessage(`Successfully cleared ${removedCount} ${status.toLowerCase()} request${removedCount !== 1 ? 's' : ''} from your history.`, 'success');
+        // Reload requests from backend to reflect the changes
+        await loadUserRequests();
 
-        console.log(`Cleared ${removedCount} ${status} requests from history`);
+        // Show success message
+        showMessage(data.message || `Successfully cleared ${data.deletedCount || 0} ${status.toLowerCase()} requests from your history.`, 'success');
+
+        console.log(`Successfully cleared ${data.deletedCount || 0} ${status} requests from backend`);
+
     } catch (error) {
         console.error('Error clearing request history:', error);
-        showMessage('Failed to clear request history. Please try again.', 'error');
+        showMessage(error.message || 'Failed to clear request history. Please try again.', 'error');
+
+        // Reset button state on error
+        if (clearBtn && originalText) {
+            clearBtn.innerHTML = originalText;
+            clearBtn.disabled = false;
+        }
     }
+}
+
+/**
+ * Note: Clear history now permanently deletes requests from the backend database.
+ * There is no "reset" functionality since the requests are actually deleted.
+ * This function is kept for backward compatibility but does nothing.
+ */
+function resetClearedHistory() {
+    showMessage('Clear history now permanently deletes requests from the database. There is no reset functionality.', 'info');
 }
 
 /**

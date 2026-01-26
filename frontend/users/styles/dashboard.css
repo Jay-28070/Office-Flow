@@ -489,8 +489,14 @@
 .requests-modal-footer {
     padding: 1.5rem;
     border-top: 1px solid #e5e7eb;
-    text-align: center;
     background: var(--gray-50);
+}
+
+.modal-footer-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: flex-end;
+    align-items: center;
 }
 
 .modal-request-item {

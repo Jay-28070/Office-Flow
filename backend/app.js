@@ -1119,6 +1119,62 @@ app.delete('/api/debug/cleanup-test-requests', authenticateFirebaseToken, requir
     }
 });
 
+// Bulk delete requests by status (User only - their own requests)
+app.delete('/api/requests/bulk-delete', authenticateFirebaseToken, async (req, res) => {
+    try {
+        const { status } = req.body;
+
+        if (!status) {
+            return res.status(400).json({
+                message: 'Status is required',
+                success: false
+            });
+        }
+
+        console.log(`User ${req.user.userId} requesting to delete all ${status} requests`);
+
+        // Define which statuses to delete
+        // For 'Completed', also delete 'Approved' requests since they're shown together
+        const statusesToDelete = status === 'Completed' ? ['Completed', 'Approved'] : [status];
+
+        // Query for user's requests with the specified status(es)
+        const requestsRef = db.collection('requests');
+        const batch = db.batch();
+        let deletedCount = 0;
+
+        for (const statusToDelete of statusesToDelete) {
+            const query = requestsRef
+                .where('userId', '==', req.user.userId)
+                .where('status', '==', statusToDelete);
+
+            const snapshot = await query.get();
+
+            snapshot.docs.forEach(doc => {
+                batch.delete(doc.ref);
+                deletedCount++;
+            });
+        }
+
+        if (deletedCount > 0) {
+            await batch.commit();
+            console.log(`Deleted ${deletedCount} ${status} requests for user ${req.user.userId}`);
+        }
+
+        res.status(200).json({
+            success: true,
+            message: `Successfully deleted ${deletedCount} ${status.toLowerCase()} request${deletedCount !== 1 ? 's' : ''}`,
+            deletedCount,
+            status
+        });
+    } catch (error) {
+        console.error('Error bulk deleting requests:', error);
+        res.status(500).json({
+            message: 'Failed to delete requests',
+            success: false
+        });
+    }
+});
+
 // Test endpoint to create a sample request (temporary for testing)
 app.post('/api/debug/create-test-request', authenticateFirebaseToken, async (req, res) => {
     try {

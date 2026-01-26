@@ -1974,4 +1974,3 @@ document.addEventListener('DOMContentLoaded', function () {
 
     console.log('Super Admin Dashboard ready');
 });
-
